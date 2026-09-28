@@ -224,7 +224,7 @@ users' Gateways.
 The product CLI submits the required Recovery version and partition hash to the
 Gateway. Within one operation, the Gateway performs the transition, reconnection,
 validation, writing and health verification. Failed validation prevents writing.
-See [component boundaries](../submodule/esp-mosaico-utils/docs/component-boundaries.md)
+See [component boundaries](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/docs/component-boundaries.md)
 for detailed responsibilities and interfaces.
 
 ## Device state and ROM recovery

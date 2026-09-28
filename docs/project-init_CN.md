@@ -16,7 +16,7 @@ python mosaico.py project init my_app
 
 `.mosaico.json` 的 `workspace.init_template` 可指向自定义描述；
 `workspace.projects_dir` 可修改生成位置，仍须位于工作区内。模板格式及路径变量见
-[应用集成](../submodule/esp-mosaico-utils/mosaico-tools/docs/application-integration.md)。
+[应用集成](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/mosaico-tools/docs/application-integration.md)。
 
 工程选择顺序：显式 `--project`、当前所在工程、用户配置的有效默认工程、
 唯一已创建工程。零工程提示创建，多工程要求选择；内部 Recovery 不参与选择。

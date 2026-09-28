@@ -39,8 +39,8 @@ python mosaico.py iris system-update --project projects/my_game
 真机阶段再验证物理按键、触摸、屏幕、音频及实际性能；Host 仿真结果不能代替这些
 硬件验证。
 
-- [Sky Hop](../submodule/esp-mosaico-bsp/examples/sky_hop/README.md)
-- [Tower Defense](../submodule/esp-mosaico-bsp/examples/tower_defense/README.md)
-- [Raylib Shooter](../submodule/esp-mosaico-bsp/examples/raylib_shooter/README.md)
-- [游戏开发细节](../submodule/esp-mosaico-bsp/docs/game-development.zh-CN.md)
-- [引擎接口与 Host](../submodule/raylib-lite-engine/README.md)
+- [Sky Hop](https://github.com/esp-mosaico/esp-mosaico-bsp/blob/master/examples/sky_hop/README.md)
+- [Tower Defense](https://github.com/esp-mosaico/esp-mosaico-bsp/blob/master/examples/tower_defense/README.md)
+- [Raylib Shooter](https://github.com/esp-mosaico/esp-mosaico-bsp/blob/master/examples/raylib_shooter/README.md)
+- [游戏开发细节](https://github.com/esp-mosaico/esp-mosaico-bsp/blob/master/docs/game-development.zh-CN.md)
+- [引擎接口与 Host](https://github.com/espressif2022/raylib-lite-engine/blob/main/README.md)

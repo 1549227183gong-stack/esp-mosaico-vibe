@@ -42,9 +42,9 @@ GSP 预览与设备使用相同的可移植 C UI 和 GSP 1.5.1 场景。
 | 仓库 | 维护内容 |
 | --- | --- |
 | 本工作区 | 入口、配置、Agent 工作流、消费者集成验证 |
-| [utils](submodule/esp-mosaico-utils) | CLI、Recovery、公共应用组件、Hello World 模板 |
-| [BSP](submodule/esp-mosaico-bsp) | 板级支持和包含游戏在内的完整示例 |
-| [Raylib Lite Engine](submodule/raylib-lite-engine) | 游戏运行时、渲染器、资源工具、Host 模拟器 |
+| [utils](https://github.com/esp-mosaico/esp-mosaico-utils) | CLI、Recovery、公共应用组件、Hello World 模板 |
+| [BSP](https://github.com/esp-mosaico/esp-mosaico-bsp) | 板级支持和包含游戏在内的完整示例 |
+| [Raylib Lite Engine](https://github.com/espressif2022/raylib-lite-engine) | 游戏运行时、渲染器、资源工具、Host 模拟器 |
 
 游戏优先使用 Raylib Lite Engine，从 BSP `examples/` 创建，先在仿真器中验证
 画面和玩法，见[游戏入口](docs/game-development_CN.md)；

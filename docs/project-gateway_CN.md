@@ -168,7 +168,7 @@ CLI 通过 ESP-Iris 公开主机接口查询本机状态，不读取其 SQLite �
 
 安装所需的 Recovery 版本和分区哈希由产品 CLI 提交给 Gateway。Gateway 在同一个
 操作中完成切换、重新连接、校验、写入和健康验证；校验不通过不会开始写入。
-详细职责与接口见[组件边界说明](../submodule/esp-mosaico-utils/docs/component-boundaries.md)。
+详细职责与接口见[组件边界说明](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/docs/component-boundaries.md)。
 
 ## 设备状态与 ROM 恢复
 

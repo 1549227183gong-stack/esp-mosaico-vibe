@@ -19,7 +19,7 @@ and does not automatically change the default project.
 
 In `.mosaico.json`, `workspace.init_template` can point to a custom descriptor.
 `workspace.projects_dir` can change the output location, which must remain within
-the workspace. See [application integration](../submodule/esp-mosaico-utils/mosaico-tools/docs/application-integration.md)
+the workspace. See [application integration](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/mosaico-tools/docs/application-integration.md)
 for the template format and path variables.
 
 Project selection follows this order: explicit `--project`, the current project,
