@@ -19,7 +19,7 @@ python mosaico.py project init my_app
 [应用集成](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/mosaico-tools/docs/application-integration.md)。
 
 工程选择顺序：显式 `--project`、当前所在工程、用户配置的有效默认工程、
-唯一已创建工程。零工程提示创建，多工程要求选择；内部 Recovery 不参与选择。
+唯一已创建工程。零工程提示创建，多工程要求选择；内部 Vibe Mode 固件不参与选择。
 显式 `--project` 相对调用目录解析。可从工作区内任意嵌套目录调用入口，
 或通过 `--workspace PATH` 指定工作区。
 
@@ -43,7 +43,8 @@ python mosaico.py recover
 python mosaico.py iris system-update --project projects/my_app
 ```
 
-`recover` 用于空白或未验证设备首次安装。新应用、布局变化或外部资源变化用
+`recover` 用于空白或未验证设备首次安装，会写入基础固件；仅进入已有
+Vibe Mode 的方式见[设备模式](device-modes_CN.md)。新应用、布局变化或外部资源变化用
 `system-update`；完整分区表和资源相同的代码更新才用 `app-update`。
 
 生成源码不保存开发机绝对路径。移动或重新克隆整个工作区后，初始化固定版本

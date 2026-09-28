@@ -13,7 +13,7 @@
 | cmake/system_update.cmake、raylib_lite_engine.cmake | utils/mosaico-tools/cmake/ |
 | tools/gsp-sim、GSP 分区打包、System Update 准备 | utils/mosaico-tools/tools/ |
 | Hello World 资源加载与镜像实现 | utils/mosaico-tools/components/ 下可选组件 |
-| Recovery 与崩溃测试固件 | utils/esp-mosaico-recovery/tests/firmware/ |
+| Vibe Mode 集成与崩溃测试固件 | utils/esp-mosaico-recovery/tests/firmware/ |
 
 已有应用可在新工作区创建一个临时参考工程，对照其 CMake 和组件清单，
 接入新的公共路径后保留自己的业务代码与分区布局。GSP 应用调用

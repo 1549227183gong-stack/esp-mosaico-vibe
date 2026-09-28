@@ -22,6 +22,10 @@ mosaico.py
 └── game create/new/sim/run/build (blank template, BSP examples and engine Host)
 ```
 
+For mode definitions and the AI/Boot button distinction, see
+[device modes](device-modes.md). `recover` writes base firmware;
+`iris test enter-recovery` only enters the existing Vibe Mode.
+
 ## Command responsibilities
 
 | Command | Purpose |
@@ -42,13 +46,13 @@ mosaico.py
 | `recover` | Provision or restore the device's base firmware, including when ESP-Iris is unreachable |
 | `game` | Create games from BSP examples and invoke engine Host simulation or builds; see [game development](game-development.md) |
 
-Commands under `iris test` exercise individual Recovery workflows:
+Commands under `iris test` exercise individual Vibe Mode workflows:
 
 | Command | Preconditions and success criteria |
 | --- | --- |
-| `enter-recovery` | A normal application responds through ESP-Iris and reboots into retained Recovery; wait for the same Device ID to reconnect with a new Boot ID. If already in Recovery, return its current status |
-| `recovery-wifi` | Requires Recovery with ESP-Iris USB available; submit the Wi-Fi network name and password, then wait for connectivity |
-| `bridge-code` | Requires Recovery, available USB, a configured Bridge service and network connectivity; open the device download page and return the pairing code, validity period and Bridge website URL |
+| `enter-recovery` | A normal application responds through ESP-Iris and reboots into Vibe Mode; wait for the same Device ID to reconnect with a new Boot ID. If already in Vibe Mode, return its current status |
+| `recovery-wifi` | Requires Vibe Mode with ESP-Iris USB available; submit the Wi-Fi network name and password, then wait for connectivity |
+| `bridge-code` | Requires Vibe Mode, available USB, a configured Bridge service and network connectivity; open the device download page and return the pairing code, validity period and Bridge website URL |
 
 ## Build tool compatibility and diagnostics
 
@@ -64,16 +68,16 @@ The `.mosaico.json` `build` object accepts `"configdep": "auto"` (default),
 source files to paths that can contain Windows reserved names such as `AUX`.
 Auto therefore disables this optimizer on Windows and retains IDF's default on
 other hosts. Auto honors an existing `IDF_CONFIGDEP_ENABLE`; explicit on/off
-overrides it. This applies to application, Recovery and system-update builds.
+overrides it. This applies to application, Vibe Mode and system-update builds.
 The standalone low-noise runner uses the same platform default and accepts that
 environment variable for explicit overrides. Disabling configdep retains Ninja
 incremental builds, but configuration changes may recompile more source files.
 
-Both the application template and Recovery bootstrap the pinned standalone GSPC
+Both the application template and Vibe Mode bootstrap the pinned standalone GSPC
 compiler without requiring the Python `gsp` module. An uncached first run needs
 a download; offline builds can set `GSPC_EXECUTABLE` to an absolute path to a
 compatible compiler. Applications use GSPC 0.6.1 and ESP-GSP 1.5.1;
-Recovery independently retains GSPC 0.5.0 and ESP-GSP 1.4.0. An explicit compiler
+Vibe Mode independently retains GSPC 0.5.0 and ESP-GSP 1.4.0. An explicit compiler
 override must match the project being built.
 
 Build error summaries include configdep `touch_file` failures and their following
@@ -108,21 +112,21 @@ for automatic selection order, reconnection waits and ownership restrictions.
 
 | Scenario | Command |
 | --- | --- |
-| Blank or unverified device, or neither normal nor Recovery is reachable | `python mosaico.py recover` |
+| Blank or unverified device, or neither normal nor Vibe Mode is reachable after connection checks | `python mosaico.py recover` |
 | New application, partition layout changes or external resource changes | `python mosaico.py iris system-update --project projects/my_app` |
 | Application code changes only, with the complete partition table matching the device | `python mosaico.py iris app-update --project projects/my_app` |
 
-`recover` prepares the reviewed base firmware and verifies that Recovery is ready.
+`recover` prepares the reviewed base firmware and verifies that Vibe Mode is ready.
 The target application still needs to be installed and accepted afterward. It
 supports only a local Gateway and also manages the underlying recovery process.
 
 A `system-update` bundle built from a project contains the application, partition
-table and resource images declared by the project. It preserves the fixed Recovery
+table and resource images declared by the project. It preserves the fixed Vibe Mode
 prefix and bootloader. A reserved but unused `game_assets` partition needs no image;
 applications using external resources declare their images through CMake for inclusion
 in the bundle. Use `--bundle PATH` for an existing bundle. See the
-[Recovery guide](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/esp-mosaico-recovery/firmware/recovery/README.md)
-for updates to Recovery itself, HTTP(S)/NAND updates and base bundle constraints.
+[Vibe Mode guide](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/esp-mosaico-recovery/firmware/recovery/README.md)
+for updates to Vibe Mode itself, HTTP(S)/NAND updates and base bundle constraints.
 
 If the partition tables differ, `app-update` returns `partition_layout_mismatch`,
 the device and build SHA-256 hashes, and a `system-update` recommendation. It does
@@ -132,8 +136,8 @@ application must pass role, product, board, layout contract and Recovery ABI che
 
 Before updating, use the product tools to preserve valid core dumps, structured
 evidence and raw logs. Acceptance requires the same Device ID to complete normal →
-Recovery → normal with new Boot IDs, run the target firmware, report healthy, and
-exhibit the intended product behavior. For a blank device, verify Recovery readiness
+Vibe Mode → normal with new Boot IDs, run the target firmware, report healthy, and
+exhibit the intended product behavior. For a blank device, verify Vibe Mode readiness
 before installing the application. Upload completion or reconnection alone does not
 establish acceptance.
 
@@ -145,18 +149,11 @@ to observe the Gateway Web workbench continuously. See the
 rules. The CLI and workbench should show the same Device ID, Boot ID and operation
 records.
 
-Continue to use `recover` when both normal and Recovery are unreachable. Only when
-the command requires manual ROM entry should the developer perform these steps:
-
-1. Power off the device.
-2. Press and hold the Boot button to the left of the USB-C port.
-3. Power on the device while continuing to hold Boot.
-4. Release Boot after entering ROM download mode, then tell the agent that the
-   physical steps are complete.
-
-The agent then detects the recovery connection, continues `recover`, and verifies
-the device and target application. Never erase the whole flash merely to restore
-connectivity, or overwrite credentials, identity or Recovery data without authorization.
+After connection checks, use `recover` when neither the normal application nor
+Vibe Mode is reachable. If manual ROM entry is required, the developer follows
+the [physical entry steps](device-modes.md#physical-entry); the agent verifies
+the ROM connection, resumes `recover`, and checks the device and target application. Never erase the whole flash merely to restore
+connectivity, or overwrite credentials, identity or Vibe Mode data without authorization.
 
 Avoid USB Serial/JTAG for application flashing and monitoring. Do not open the
 interface concurrently while the Gateway owns it. High-Speed USB belongs to ESP-Iris

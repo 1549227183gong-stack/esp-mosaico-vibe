@@ -22,6 +22,10 @@ This creates `projects/my_app` from the utils-owned Hello World template without
 changing the default project. `--dry-run` writes nothing; existing targets are
 never overwritten. See [project creation](docs/project-init.md).
 
+Use **Vibe Mode** for device installation and maintenance, and **ROM Download Mode**
+for low-level flashing. See [device modes](docs/device-modes.md) for their purposes,
+buttons and commands.
+
 ## Preview and install
 
 ```sh
@@ -45,7 +49,7 @@ and resources. Device operations always go through the product CLI.
 | Repository | Maintains |
 | --- | --- |
 | This workspace | Entry, configuration, Agent workflows, consumer integration checks |
-| [utils](https://github.com/esp-mosaico/esp-mosaico-utils) | CLI, Recovery, shared application components and Hello World template |
+| [utils](https://github.com/esp-mosaico/esp-mosaico-utils) | CLI, Vibe Mode firmware, shared application components and Hello World template |
 | [BSP](https://github.com/esp-mosaico/esp-mosaico-bsp) | Board support and complete examples, including games |
 | [Raylib Lite Engine](https://github.com/espressif2022/raylib-lite-engine) | Game runtime, renderer, assets and Host simulator |
 

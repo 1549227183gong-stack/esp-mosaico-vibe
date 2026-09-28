@@ -19,6 +19,9 @@ python mosaico.py project init my_app
 命令从 utils 维护的 Hello World 模板生成 `projects/my_app`，不修改默认工程。
 `--dry-run` 不写文件，已有目标不会被覆盖。详见[工程创建](docs/project-init_CN.md)。
 
+设备安装与维护使用 **Vibe Mode**；底层烧录使用 **ROM Download Mode**。
+两者的用途、按键和命令见[设备模式](docs/device-modes_CN.md)。
+
 ## 预览和安装
 
 ```sh
@@ -42,7 +45,7 @@ GSP 预览与设备使用相同的可移植 C UI 和 GSP 1.5.1 场景。
 | 仓库 | 维护内容 |
 | --- | --- |
 | 本工作区 | 入口、配置、Agent 工作流、消费者集成验证 |
-| [utils](https://github.com/esp-mosaico/esp-mosaico-utils) | CLI、Recovery、公共应用组件、Hello World 模板 |
+| [utils](https://github.com/esp-mosaico/esp-mosaico-utils) | CLI、Vibe Mode 固件、公共应用组件、Hello World 模板 |
 | [BSP](https://github.com/esp-mosaico/esp-mosaico-bsp) | 板级支持和包含游戏在内的完整示例 |
 | [Raylib Lite Engine](https://github.com/espressif2022/raylib-lite-engine) | 游戏运行时、渲染器、资源工具、Host 模拟器 |
 

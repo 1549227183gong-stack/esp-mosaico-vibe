@@ -9,9 +9,14 @@ description: >
 # Mosaico Device Operations
 
 Complete the requested device operation through the workspace's `python mosaico.py`.
-Follow [AGENTS.md](../../../AGENTS.md) for Recovery, transport and data-preservation
+Follow [AGENTS.md](../../../AGENTS.md) for Vibe Mode, transport and data-preservation
 constraints. Read linked guide sections when their branch applies; command semantics
 and device-state fields remain maintained in those guides.
+
+Use the [device mode guide](../../../docs/device-modes.md) to distinguish Vibe Mode
+(`firmware_mode=recovery`, Iris available) from ROM Download Mode (no Iris).
+To enter existing Vibe Mode from a reachable application, use
+`iris test enter-recovery`; `recover` writes base firmware.
 
 ## Establish scope and target
 
@@ -68,13 +73,13 @@ evidence. Finish with the diagnosis, evidence paths and any necessary next actio
    Preserve logs and valid core dumps before
    operations that could destroy them. Blank/unverified devices need provisioning first.
 3. Execute the selected update through `mosaico.py` for the selected project/device.
-   Let the product command manage the Recovery transition and compatibility checks.
+   Let the product command manage the Vibe Mode transition and compatibility checks.
    A layout mismatch calls for reassessing the update method, not editing partitions
    to bypass it. On disconnect or timeout, inspect the original operation record;
    do not start a competing write while its outcome is unknown.
-4. Apply the linked acceptance criteria: same Device ID through normal -> Recovery ->
-   normal, new Boot IDs after actual reboots, ready Recovery and healthy target firmware.
-   A device starting in Recovery/ROM first needs the corresponding readiness/identity
+4. Apply the linked acceptance criteria: same Device ID through normal -> Vibe Mode ->
+   normal, new Boot IDs after actual reboots, ready Vibe Mode and healthy target firmware.
+   A device starting in Vibe Mode/ROM first needs the corresponding readiness/identity
    evidence, then the intended normal application. Verify relevant product behavior;
    an upload or reconnect alone does not complete delivery.
 
@@ -84,17 +89,17 @@ Use this branch for an authorized recovery or provisioning needed for the reques
 installation. First distinguish ownership/connection failures and active transitions
 from evidence requiring recovery, using the state checks above.
 
-Follow [recovery entry and physical steps](../../../docs/mosaico-cli_CN.md#调试与恢复入口)
+Follow [physical entry steps](../../../docs/device-modes.md#physical-entry)
 and [ROM operation tracking](../../../docs/project-gateway_CN.md#rom-恢复操作).
 Use `python mosaico.py recover` for blank/unverified devices or when neither normal
-nor Recovery Iris is reachable. Preserve accessible evidence before proceeding.
+nor Vibe Mode Iris is reachable. Preserve accessible evidence before proceeding.
 Manual ROM entry is the last resort: when required, give the documented physical
 sequence, wait for the developer to complete it, then detect and verify the connection
 and resume the product command. Never substitute direct flashing or whole-flash erase.
 
-Verify the selected hardware identity, expected Recovery version and OTA capability;
+Verify the selected hardware identity, expected Vibe Mode version and OTA capability;
 return operations to the Iris Gateway when reachable. Install and verify the intended
-application if delivery is part of the task. Otherwise report Recovery readiness and
+application if delivery is part of the task. Otherwise report Vibe Mode readiness and
 the remaining application state without claiming that an application was delivered.
 
 ## Close the operation

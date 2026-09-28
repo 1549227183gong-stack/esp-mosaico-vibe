@@ -17,7 +17,7 @@ python mosaico.py project sim --project projects/<name> --headless --duration 3
 ```
 
 The public command selects explicit --project, current application, valid user
-default or the sole created app. No internal Recovery or template directory is
+default or the sole created app. No internal Vibe Mode firmware or template directory is
 selected implicitly. Native sim_bridge executes the application's portable C UI;
 keep board/FreeRTOS/Iris out of pc/. Preserve 480×480 RGB565 and the shared scene.
 

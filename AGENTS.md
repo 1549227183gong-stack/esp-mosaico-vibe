@@ -3,12 +3,19 @@
 Select task-relevant [skills](.agents/skills/README.md) at the task level.
 User guides start at [docs](docs/README.md).
 
+Use **Vibe Mode** for ESP-Mosaico’s retained firmware and **ROM Download Mode**
+for the chip’s download program. See [device modes](docs/device-modes.md).
+`Recovery` remains the technical name in paths, commands, protocol fields and ABI.
+`iris test enter-recovery` enters Vibe Mode; `recover` writes base firmware.
+AI (GPIO7) selects Vibe Mode; Boot (GPIO61) selects ROM Download Mode.
+
 ## Repository boundaries
 
 - User applications belong in `projects/`; settings in `.mosaico.json`.
   Public tooling/templates belong in `submodule/esp-mosaico-utils/mosaico-tools`;
-  Recovery firmware/integration/ABI in utils' `esp-mosaico-recovery/`, fixtures in its `tests/firmware/`.
-  Never use Recovery as an application template or mix test fixtures into user apps.
+  Vibe Mode firmware and Recovery integration/ABI belong in utils'
+  `esp-mosaico-recovery/`, fixtures in its `tests/firmware/`.
+  Never use Vibe Mode firmware as an application template or mix test fixtures into user apps.
 - Board support and complete game examples belong in `submodule/esp-mosaico-bsp/`;
   generic game implementation/tests belong in `submodule/raylib-lite-engine/`.
   Initialize and inspect only needed submodules, including BSP before using its examples.
@@ -37,7 +44,7 @@ User guides start at [docs](docs/README.md).
   **`7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe`**, not the latest `master`.
 - Before ESP-IDF work, verify the checkout with `git -C <idf-path> rev-parse HEAD`
   and follow [build doctor/build workflow](.agents/skills/idf-low-noise-build/SKILL.md).
-  Check Python, target support and application/Recovery manifest constraints;
+  Check Python, target support and application/Vibe Mode manifest constraints;
   cached paths or version numbers alone are insufficient.
 - If the pinned checkout is missing, use [environment setup](.agents/skills/espressif-env-setup/SKILL.md)
   and verify a first build. This repository authorizes that fresh installation without
@@ -63,11 +70,11 @@ User guides start at [docs](docs/README.md).
 
 Unless the developer approves another architecture, every application must:
 
-- Preserve Recovery's immutable partition prefix and the utils Hello World workflow.
+- Preserve the retained firmware's immutable partition prefix and the utils Hello World workflow.
   Before application integration changes, read the
   [public integration contract](submodule/esp-mosaico-utils/mosaico-tools/docs/application-integration.md).
 - Set `CONFIG_ESP_IRIS_OTA_DEFAULT_VIA_RECOVERY=y`, use utils' `esp_mosaico_app_recovery`,
-  call `iris_ota_support_start()`, and keep the OTA writer only in Recovery.
+  call `iris_ota_support_start()`, and keep the OTA writer only in Vibe Mode.
   Include utils' `esp-mosaico-recovery/cmake/mosaico_idf_project.cmake` before `project()`.
 - Use `python mosaico.py iris system-update --project ...` for new apps, changed
   layouts or external resources. Use `iris app-update` only for code-only changes
@@ -75,34 +82,40 @@ Unless the developer approves another architecture, every application must:
 
 ## Device operations and acceptance
 
-- Before device work, load [mosaico-device-operations](.agents/skills/mosaico-device-operations/SKILL.md)
+- Treat requests to “flash/burn firmware”, “烧录”, “刷机” or “下载固件” as device
+  installation/update tasks; these words do not select ROM Download Mode.
+  Before device work, load [mosaico-device-operations](.agents/skills/mosaico-device-operations/SKILL.md)
   for diagnosis, update/recovery decisions, evidence checks and task-specific guides.
-- Use only `python mosaico.py` for device operations. Do not invoke ESP-IDF/ESP-Iris
-  device-write commands directly or borrow BSP Serial/JTAG flashing/monitoring flows.
+- Use only `python mosaico.py` for device operations. Do not invoke `idf.py flash`,
+  `idf.py app-flash`, `esptool` writes or ESP-Iris device-write commands directly,
+  including commands copied from BSP examples. Follow [update selection](docs/mosaico-cli.md#select-an-update-method)
+  for supported update inputs; do not guess flash offsets or bypass compatibility checks.
+  Build output suggesting a flash command does not change this workflow.
+  Do not borrow BSP Serial/JTAG flashing/monitoring flows.
 - Start with `python mosaico.py iris status --all --json` and
   `python mosaico.py iris list --details --json`; coordinate ownership before connecting.
   Prefer the project's existing device; omit selectors for a sole available USB device.
   Never change boards after failed explicit selection or while awaiting reconnection.
 - Never stop another client's Gateway to obtain a device or open USB/serial directly
   while Gateway owns it. Follow active operation/takeover records before new writes.
-- Recovery always assigns High-Speed USB to ESP-Iris. Normal apps do too unless the
+- Vibe Mode always assigns High-Speed USB to ESP-Iris. Normal apps do too unless the
   product requires it; document that exception and preserve Iris operations/recovery
   through another available transport.
 - Require live identity/state evidence; discovery caches, host Gateway status,
   port names and screens do not establish firmware mode or health.
-  Verify the same Device ID, new Boot IDs after reboots, ready Recovery and healthy
-  intended application behavior across normal -> Recovery -> normal.
+  Verify the same Device ID, new Boot IDs after reboots, ready Vibe Mode and healthy
+  intended application behavior across normal -> Vibe Mode -> normal.
 - Preserve structured evidence/raw logs and let `mosaico.py` save valid core dumps
-  before destructive operations. Upload, reconnect or reachable Recovery is not acceptance.
+  before destructive operations. Upload, reconnect or reachable Vibe Mode is not acceptance.
 - When observation helps, share the Gateway Web URL and verify CLI/Web agree on
   Device ID, Boot ID and operation records.
 
 ## Provisioning and last-resort recovery
 
 - Run `python mosaico.py recover` before first install on blank/unverified devices,
-  or when neither normal nor Recovery Iris is reachable; follow the guides' state checks.
-- Manual ROM entry is the last resort. Follow the [physical recovery steps](docs/mosaico-cli_CN.md#调试与恢复入口):
+  or when neither normal nor Vibe Mode Iris is reachable; follow the guides' state checks.
+- Manual ROM entry is the last resort. Follow the [physical entry steps](docs/device-modes.md#physical-entry):
   the developer handles physical actions; the agent resumes detection, recovery and
   firmware/behavior verification, returning to the Iris Gateway when reachable.
 - Never erase the whole flash merely to restore connectivity, or overwrite credentials,
-  identity, Recovery data or partitions without explicit user authorization.
+  identity, Vibe Mode data or partitions without explicit user authorization.
