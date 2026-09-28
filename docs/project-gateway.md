@@ -124,7 +124,7 @@ submitted.
 
 When upgrading from a legacy random Device ID to an identity derived from the eFuse
 Base MAC, refresh saved selectors with `iris list`. Operation history for the old ID
-is retained. Normal and Recovery firmware should use compatible identity rules.
+is retained. Normal and Vibe Mode firmware should use compatible identity rules.
 
 ## Coordination across projects
 
@@ -208,7 +208,7 @@ a local instance.
 
 ## Component boundaries and version policy
 
-The host product tools live in `submodule/esp-mosaico-utils/mosaico-tools`. Recovery
+The host product tools live in `submodule/esp-mosaico-utils/mosaico-tools`. Vibe Mode
 firmware, reviewed images and the shared persistent ABI belong to `esp-mosaico-recovery`.
 Legacy tool entry points retain forwarding compatibility. The CLI queries local
 state through the public ESP-Iris host API, without reading its SQLite tables or
@@ -221,7 +221,7 @@ This mode fingerprints Python sources, dependency locks and workbench build arti
 including uncommitted changes. A mismatch raises an error without terminating other
 users' Gateways.
 
-The product CLI submits the required Recovery version and partition hash to the
+The product CLI submits the required Vibe Mode version and partition hash to the
 Gateway. Within one operation, the Gateway performs the transition, reconnection,
 validation, writing and health verification. Failed validation prevents writing.
 See [component boundaries](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/docs/component-boundaries.md)
@@ -229,8 +229,12 @@ for detailed responsibilities and interfaces.
 
 ## Device state and ROM recovery
 
+See [device modes](device-modes.md) for Vibe Mode and ROM Download Mode.
+Workbench Recovery labels map to Vibe Mode on ESP-Mosaico; machine fields retain
+`recovery`. `needs_recovery` is a device state, not a firmware mode.
+
 Devices expose five states: offline, connecting, idle, busy and needs recovery.
-Project ownership and firmware mode (Normal / Recovery / ROM / unknown) are shown
+Project ownership and firmware mode (Normal / Vibe Mode / ROM / unknown) are shown
 separately. Log pages and client keepalives do not make a device busy. Mirroring,
 background Jobs and active operations report specific reasons for being busy.
 
@@ -256,7 +260,7 @@ form a single state enumeration:
 | Situation | Required evidence and next step |
 | --- | --- |
 | Normal application | Live `firmware_mode=normal`, Device ID, Boot ID, and expected project/version. Installation acceptance also requires healthy status and the intended product behavior |
-| Recovery | Live `firmware_mode=recovery` with the same Device ID. Before updating, confirm the expected Recovery version and `ota` in `capability_names`; a USB reconnect alone is insufficient |
+| Vibe Mode | Live `firmware_mode=recovery` with the same Device ID. Before updating, confirm the expected Vibe Mode version and `ota` in `capability_names`; a USB reconnect alone is insufficient |
 | Updating, rebooting or handing off | Inspect the active operation or takeover record, follow that record and the selected Device ID, and wait for completion. Do not repeat writes or select another board |
 | ROM download | The `mosaico.py recover` workflow confirms a live ROM endpoint. No ESP-Iris handshake or Boot ID is available; verify hardware identity before provisioning |
 | Offline or unknown | No successful live handshake, or only cached discovery/ownership. Check the owner, active transitions and connection first; this does not establish ROM mode, blank flash or damaged hardware |

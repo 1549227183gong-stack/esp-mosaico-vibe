@@ -90,7 +90,7 @@ Gateway 上已连接的设备，不从当前电脑自动认领 USB。
 `--device-id` 可独立选定设备：Gateway 优先复用已验证连接，否则先尝试在线 USB，再验证其他候选端点。HELLO 身份必须匹配；失败的新连接释放本次占用。`--endpoint` 是严格限定，其他工作区占用不会被抢走。候选连接重试只发生在写入提交之前。
 
 从旧版随机 Device ID 升级为 eFuse Base MAC 派生身份时，用 `iris list` 刷新
-保存的选择器。旧 ID 的操作历史仍保留，normal 与 Recovery 应使用兼容的身份规则。
+保存的选择器。旧 ID 的操作历史仍保留，normal 与 Vibe Mode 应使用兼容的身份规则。
 
 ## 跨项目协调
 
@@ -157,7 +157,7 @@ Gateway 重启不会自动重放设备写操作。
 
 ## 组件边界与版本策略
 
-主机产品工具位于 `submodule/esp-mosaico-utils/mosaico-tools`；Recovery 固件、
+主机产品工具位于 `submodule/esp-mosaico-utils/mosaico-tools`；Vibe Mode 固件、
 已审查镜像与共享持久化 ABI 位于 `esp-mosaico-recovery`。旧工具入口保留转发兼容。
 CLI 通过 ESP-Iris 公开主机接口查询本机状态，不读取其 SQLite 表或私有锁结构。
 
@@ -166,14 +166,18 @@ CLI 通过 ESP-Iris 公开主机接口查询本机状态，不读取其 SQLite �
 `"gateway": {"source_policy": "exact"}`；该模式对 Python、依赖锁和工作台构建产物
 计算内容指纹，包含未提交变更。发现不一致会报错，不会终止其他用户的 Gateway。
 
-安装所需的 Recovery 版本和分区哈希由产品 CLI 提交给 Gateway。Gateway 在同一个
+安装所需的 Vibe Mode 版本和分区哈希由产品 CLI 提交给 Gateway。Gateway 在同一个
 操作中完成切换、重新连接、校验、写入和健康验证；校验不通过不会开始写入。
 详细职责与接口见[组件边界说明](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/docs/component-boundaries.md)。
 
 ## 设备状态与 ROM 恢复
 
+Vibe Mode 与 ROM 下载模式的区别见[设备模式](device-modes_CN.md)。
+工作台的 Recovery 标签在 ESP-Mosaico 上对应 Vibe Mode，机器字段仍使用
+`recovery`。`needs_recovery` 是设备状态，不是固件模式。
+
 设备对外显示五种状态：离线、连接中、空闲、忙碌、需恢复。项目归属与固件模式
-（Normal / Recovery / ROM / 未知）单独显示。日志页面、客户端保活不构成设备忙碌；
+（Normal / Vibe Mode / ROM / 未知）单独显示。日志页面、客户端保活不构成设备忙碌；
 镜像、后台 Job 和正在执行的操作会给出具体忙碌原因。
 
 ### 实时证据与下一步
@@ -196,7 +200,7 @@ Device ID、Boot ID。离线或握手失败时，不能把旧查询结果当成�
 | 现场情况 | 必需证据与下一步 |
 | --- | --- |
 | 正常应用 | 实时 `firmware_mode=normal`、Device ID、Boot ID，以及预期工程和版本；安装验收还须确认 healthy 和目标产品行为。 |
-| Recovery | 实时 `firmware_mode=recovery` 且为同一 Device ID；更新前确认预期 Recovery 版本及 `capability_names` 中的 `ota`，USB 重连本身不够。 |
+| Vibe Mode | 实时 `firmware_mode=recovery` 且为同一 Device ID；更新前确认预期 Vibe Mode 版本及 `capability_names` 中的 `ota`，USB 重连本身不够。 |
 | 更新、重启或交接中 | 检查活动 operation 或 takeover 记录，跟随原记录与已选 Device ID 等待完成，不重复写入或改选其他板。 |
 | ROM 下载 | 由 `mosaico.py recover` 流程确认实时 ROM 端点；此时没有 ESP-Iris 握手或 Boot ID，初始化前须核对硬件身份。 |
 | 离线或未知 | 尚无成功实时握手，或仅有缓存发现与归属；先检查拥有者、活动切换和连接，不能据此认定 ROM 模式、空白 Flash 或设备损坏。 |

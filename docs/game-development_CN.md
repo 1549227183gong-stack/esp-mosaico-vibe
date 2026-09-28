@@ -18,7 +18,7 @@ python mosaico.py iris system-update --project projects/my_game
 
 默认模板为 `blank`，也可显式指定 `--template blank`。初始画面为空白黑色画布，
 在 `main/game.c` 中提供共享 C 更新、绘制和指针输入接口，项目标识按新名称生成。
-它包含设备与 Host 入口、Recovery 集成，无需清理示例玩法、atlas、音频或游戏资源
+它包含设备与 Host 入口、[Vibe Mode 集成](device-modes_CN.md)，无需清理示例玩法、atlas、音频或游戏资源
 分区。固件配置时会生成一个小型 GSP 画布占位图并嵌入应用。
 
 需要完整示例时，显式选择 `--template sky-hop`、`--template tower-defense` 或

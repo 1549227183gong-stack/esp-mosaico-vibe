@@ -22,6 +22,9 @@ mosaico.py
 └── game create/new/sim/run/build（空白模板、BSP 示例与引擎 Host）
 ```
 
+模式定义及 AI/Boot 按键区别见[设备模式](device-modes_CN.md)。
+`recover` 写入基础固件；`iris test enter-recovery` 只进入已有 Vibe Mode。
+
 ## 命令职责
 
 | 命令 | 含义 |
@@ -42,13 +45,13 @@ mosaico.py
 | `recover` | 初始化或恢复设备基础固件，包括 ESP-Iris 不可达时的恢复 |
 | `game` | 从 BSP 示例创建游戏，调用引擎 Host 仿真或构建，见[游戏开发入口](game-development_CN.md) |
 
-`iris test` 下的命令用于分别测试 Recovery 流程：
+`iris test` 下的命令用于分别测试 Vibe Mode 流程：
 
 | 命令 | 前置条件和成功判据 |
 | --- | --- |
-| `enter-recovery` | 正常应用通过 ESP-Iris 响应，重启进入已有 Recovery；等待同一 Device ID 以新的 Boot ID 重连。已经在 Recovery 时返回当前状态 |
-| `recovery-wifi` | 已进入 Recovery 且 ESP-Iris USB 可用；下发 Wi-Fi 名称和密码并等待联网成功 |
-| `bridge-code` | 已进入 Recovery、USB 可用、已配置 Bridge 服务且能够联网；打开设备下载页面，返回配对码、有效期和 Bridge 网站地址 |
+| `enter-recovery` | 正常应用通过 ESP-Iris 响应，重启进入已有 Vibe Mode；等待同一 Device ID 以新的 Boot ID 重连。已经在 Vibe Mode 时返回当前状态 |
+| `recovery-wifi` | 已进入 Vibe Mode 且 ESP-Iris USB 可用；下发 Wi-Fi 名称和密码并等待联网成功 |
+| `bridge-code` | 已进入 Vibe Mode、USB 可用、已配置 Bridge 服务且能够联网；打开设备下载页面，返回配对码、有效期和 Bridge 网站地址 |
 
 ## 构建工具兼容性与诊断
 
@@ -68,14 +71,14 @@ JSON 中 `idf.version` 是用于判定的版本，`idf.version_source` 标明来
 源文件中的 `CONFIG_*` 宏名转成路径，可能产生 Windows 保留名 `AUX` 等。
 因此 `auto` 在 Windows 上默认关闭此优化，其他平台沿用 ESP-IDF 默认值。
 `auto` 尊重已有的 `IDF_CONFIGDEP_ENABLE` 环境变量；显式 `on` / `off`
-优先于环境变量。该设置覆盖应用构建、Recovery 构建及 system-update 打包。
+优先于环境变量。该设置覆盖应用构建、Vibe Mode 构建及 system-update 打包。
 独立低噪声脚本采用相同的平台默认值，可通过该环境变量显式覆盖。
 关闭 configdep 仍保留 Ninja 增量构建，但修改配置可能重新编译更多源文件。
 
-应用模板和 Recovery 均使用固定版本的独立 GSPC 编译器引导，无需为此安装
+应用模板和 Vibe Mode 均使用固定版本的独立 GSPC 编译器引导，无需为此安装
 Python `gsp` 模块。首次无缓存时需要下载；离线环境可用 `GSPC_EXECUTABLE`
 指定兼容编译器的绝对路径。应用使用 GSPC 0.6.1 和 ESP-GSP 1.5.1；
-Recovery 独立保持 GSPC 0.5.0 和 ESP-GSP 1.4.0。显式指定的编译器必须与
+Vibe Mode 独立保持 GSPC 0.5.0 和 ESP-GSP 1.4.0。显式指定的编译器必须与
 当前构建工程的组件版本匹配。
 
 构建错误摘要会包含 configdep 的 `touch_file` 失败原因及后续路径信息；
@@ -105,18 +108,18 @@ python mosaico.py iris crash --project projects/my_app --archive
 
 | 场景 | 命令 |
 | --- | --- |
-| 空白或未经验证的设备，或 normal/Recovery 均不可达 | `python mosaico.py recover` |
+| 空白或未经验证的设备，或排查连接后 normal/Vibe Mode 仍均不可达 | `python mosaico.py recover` |
 | 新应用，或分区布局、外部资源变化 | `python mosaico.py iris system-update --project projects/my_app` |
 | 仅修改应用代码，且完整分区表与设备一致 | `python mosaico.py iris app-update --project projects/my_app` |
 
-`recover` 准备经过评审的基础固件并验证 Recovery 就绪；之后还需安装并验收目标
+`recover` 准备经过评审的基础固件并验证 Vibe Mode 就绪；之后还需安装并验收目标
 应用。它仅支持本机 Gateway，底层恢复过程也由该命令管理。
 
 从工程构建的 `system-update` 包包含应用、分区表及工程声明的资源镜像，保留
-Recovery 固定前缀和 bootloader。仅预留但未使用的 `game_assets` 不需要镜像；
+Vibe Mode 固定前缀和 bootloader。仅预留但未使用的 `game_assets` 不需要镜像；
 使用外部资源的应用通过 CMake 声明将镜像纳入包。已有包可使用 `--bundle PATH`。
-Recovery 自身更新、HTTP(S)/NAND 更新及基础包约束见
-[Recovery 说明](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/esp-mosaico-recovery/firmware/recovery/README.md)。
+Vibe Mode 自身更新、HTTP(S)/NAND 更新及基础包约束见
+[Vibe Mode 说明](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/esp-mosaico-recovery/firmware/recovery/README.md)。
 
 `app-update` 遇到分区表不同会返回 `partition_layout_mismatch`、设备/构建
 SHA-256 及 `system-update` 建议，不会自动扩大写入范围或修改工程分区表。
@@ -124,8 +127,8 @@ SHA-256 及 `system-update` 建议，不会自动扩大写入范围或修改工�
 布局契约和 Recovery ABI 检查。
 
 更新前通过产品工具保存有效 core dump、结构化证据和原始日志。更新成功须确认
-同一 Device ID 经 normal → Recovery → normal 返回，产生新的 Boot ID，运行
-目标固件并报告 healthy，且产品行为符合预期。空白设备则先完成 Recovery 就绪
+同一 Device ID 经 normal → Vibe Mode → normal 返回，产生新的 Boot ID，运行
+目标固件并报告 healthy，且产品行为符合预期。空白设备则先完成 Vibe Mode 就绪
 验证，再安装应用。上传完成或重连本身不代表验收通过。
 
 ## 调试与恢复入口
@@ -135,16 +138,10 @@ SHA-256 及 `system-update` 建议，不会自动扩大写入范围或修改工�
 [Gateway 指南](project-gateway_CN.md)。CLI 和工作台应显示同一设备的 Device ID、
 Boot ID 和操作记录。
 
-normal 与 Recovery 都不可达时继续使用 `recover`。仅当命令要求手动进入 ROM
-时，由开发者执行：
-
-1. 关闭设备电源。
-2. 按住 USB-C 接口左侧的 Boot 键。
-3. 保持按住 Boot 键并开机。
-4. 进入 ROM 下载模式后松开 Boot 键，告知 Agent 物理操作完成。
-
-之后由 Agent 检测恢复连接，继续 `recover` 并验证设备和目标应用。
-不得仅为恢复连接擦除整片 Flash，或未经授权覆盖凭据、身份及 Recovery 数据。
+排查连接后 normal 与 Vibe Mode 仍均不可达时，使用 `recover`。仅当命令要求
+手动进入 ROM 时，由开发者按[物理入口步骤](device-modes_CN.md#物理入口)执行；
+随后由 Agent 核实 ROM 连接、继续 `recover` 并验证设备和目标应用。
+不得仅为恢复连接擦除整片 Flash，或未经授权覆盖凭据、身份及 Vibe Mode 数据。
 
 应用烧录和监控避免 USB Serial/JTAG；Gateway 拥有接口时不得并发打开它。
 High-Speed USB 默认交给 ESP-Iris；产品功能需要占用它的 normal 应用应记录例外，

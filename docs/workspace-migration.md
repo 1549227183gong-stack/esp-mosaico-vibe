@@ -15,7 +15,7 @@ existing user applications.
 | cmake/system_update.cmake, raylib_lite_engine.cmake | utils/mosaico-tools/cmake/ |
 | tools/gsp-sim, GSP partition packaging, System Update preparation | utils/mosaico-tools/tools/ |
 | Hello World resource loading and mirroring implementation | Optional components under utils/mosaico-tools/components/ |
-| Recovery and crash-test firmware | utils/esp-mosaico-recovery/tests/firmware/ |
+| Vibe Mode integration and crash-test firmware | utils/esp-mosaico-recovery/tests/firmware/ |
 
 For an existing application, create a temporary reference project in the new
 workspace and compare its CMake files and component manifest. Adopt the public

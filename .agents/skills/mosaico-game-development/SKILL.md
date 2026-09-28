@@ -27,7 +27,7 @@ alone does not establish that the game looks or plays correctly.
 Never implement a separate Python or browser renderer.
 Build through `python mosaico.py game build --project ...`;
 inspect real component APIs and preserve the retained Recovery contract.
-Keep OTA writer only in Recovery and mark healthy after the first successful frame.
+Keep OTA writer only in Vibe Mode and mark healthy after the first successful frame.
 
 Run the affected engine tests, BSP game behavior tests, and generated-app builds.
 Keep sprites, audio sources and license information with the game. Follow the

@@ -21,7 +21,7 @@ python mosaico.py iris system-update --project projects/my_game
 The default template is `blank` (also selectable with `--template blank`). It
 starts with an empty black canvas and shared C update, drawing and pointer-input
 functions in `main/game.c`. Project identity is generated from your chosen name.
-It includes the device/Host entry points and Recovery integration, with no
+It includes the device/Host entry points and [Vibe Mode integration](device-modes.md), with no
 example gameplay, atlas, sounds or external game resource partition to remove.
 The small embedded GSP canvas placeholder is generated during firmware configuration.
 

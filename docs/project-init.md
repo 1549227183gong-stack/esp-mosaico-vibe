@@ -25,7 +25,7 @@ for the template format and path variables.
 Project selection follows this order: explicit `--project`, the current project,
 a valid user-configured default project, then the sole created project. With no
 projects, the CLI prompts you to create one; with multiple projects, it requires
-a selection. Internal Recovery is never a candidate. Explicit `--project` paths
+a selection. The internal Vibe Mode firmware is never a candidate. Explicit `--project` paths
 are resolved relative to the calling directory. You can invoke the entry point
 from any nested directory in the workspace, or select a workspace with
 `--workspace PATH`.
@@ -55,7 +55,8 @@ python mosaico.py recover
 python mosaico.py iris system-update --project projects/my_app
 ```
 
-Use `recover` before the first installation on a blank or unverified device.
+Use `recover` before the first installation on a blank or unverified device;
+it writes base firmware. To enter existing Vibe Mode, see [device modes](device-modes.md).
 Use `system-update` for a new application, layout changes or external resource
 changes. Use `app-update` only for code changes with an identical full partition
 table and unchanged resources.
