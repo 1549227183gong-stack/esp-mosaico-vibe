@@ -121,7 +121,7 @@ table and resource images declared by the project. It preserves the fixed Recove
 prefix and bootloader. A reserved but unused `game_assets` partition needs no image;
 applications using external resources declare their images through CMake for inclusion
 in the bundle. Use `--bundle PATH` for an existing bundle. See the
-[Recovery guide](../submodule/esp-mosaico-utils/esp-mosaico-recovery/firmware/recovery/README.md)
+[Recovery guide](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/esp-mosaico-recovery/firmware/recovery/README.md)
 for updates to Recovery itself, HTTP(S)/NAND updates and base bundle constraints.
 
 If the partition tables differ, `app-update` returns `partition_layout_mismatch`,

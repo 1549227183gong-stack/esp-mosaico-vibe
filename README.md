@@ -45,9 +45,9 @@ and resources. Device operations always go through the product CLI.
 | Repository | Maintains |
 | --- | --- |
 | This workspace | Entry, configuration, Agent workflows, consumer integration checks |
-| [utils](submodule/esp-mosaico-utils) | CLI, Recovery, shared application components and Hello World template |
-| [BSP](submodule/esp-mosaico-bsp) | Board support and complete examples, including games |
-| [Raylib Lite Engine](submodule/raylib-lite-engine) | Game runtime, renderer, assets and Host simulator |
+| [utils](https://github.com/esp-mosaico/esp-mosaico-utils) | CLI, Recovery, shared application components and Hello World template |
+| [BSP](https://github.com/esp-mosaico/esp-mosaico-bsp) | Board support and complete examples, including games |
+| [Raylib Lite Engine](https://github.com/espressif2022/raylib-lite-engine) | Game runtime, renderer, assets and Host simulator |
 
 Prefer Raylib Lite Engine for games, create from BSP `examples/`, and validate
 visuals and gameplay in its simulator first; see the [game entry](docs/game-development.md).

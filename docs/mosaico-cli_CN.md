@@ -116,7 +116,7 @@ python mosaico.py iris crash --project projects/my_app --archive
 Recovery 固定前缀和 bootloader。仅预留但未使用的 `game_assets` 不需要镜像；
 使用外部资源的应用通过 CMake 声明将镜像纳入包。已有包可使用 `--bundle PATH`。
 Recovery 自身更新、HTTP(S)/NAND 更新及基础包约束见
-[Recovery 说明](../submodule/esp-mosaico-utils/esp-mosaico-recovery/firmware/recovery/README.md)。
+[Recovery 说明](https://github.com/esp-mosaico/esp-mosaico-utils/blob/main/esp-mosaico-recovery/firmware/recovery/README.md)。
 
 `app-update` 遇到分区表不同会返回 `partition_layout_mismatch`、设备/构建
 SHA-256 及 `system-update` 建议，不会自动扩大写入范围或修改工程分区表。

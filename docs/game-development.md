@@ -50,8 +50,8 @@ re-run affected flows after fixes.
 On the device, validate physical buttons, touch, display, audio and actual
 performance. Host simulation cannot replace these hardware checks.
 
-- [Sky Hop](../submodule/esp-mosaico-bsp/examples/sky_hop/README.md)
-- [Tower Defense](../submodule/esp-mosaico-bsp/examples/tower_defense/README.md)
-- [Raylib Shooter](../submodule/esp-mosaico-bsp/examples/raylib_shooter/README.md)
-- [Detailed game development guide (Chinese)](../submodule/esp-mosaico-bsp/docs/game-development.zh-CN.md)
-- [Engine interfaces and Host](../submodule/raylib-lite-engine/README.md)
+- [Sky Hop](https://github.com/esp-mosaico/esp-mosaico-bsp/blob/master/examples/sky_hop/README.md)
+- [Tower Defense](https://github.com/esp-mosaico/esp-mosaico-bsp/blob/master/examples/tower_defense/README.md)
+- [Raylib Shooter](https://github.com/esp-mosaico/esp-mosaico-bsp/blob/master/examples/raylib_shooter/README.md)
+- [Detailed game development guide (Chinese)](https://github.com/esp-mosaico/esp-mosaico-bsp/blob/master/docs/game-development.zh-CN.md)
+- [Engine interfaces and Host](https://github.com/espressif2022/raylib-lite-engine/blob/main/README.md)
