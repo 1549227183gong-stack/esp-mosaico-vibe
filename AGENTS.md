@@ -107,8 +107,12 @@ Unless the developer approves another architecture, every application must:
   intended application behavior across normal -> Vibe Mode -> normal.
 - Preserve structured evidence/raw logs and let `mosaico.py` save valid core dumps
   before destructive operations. Upload, reconnect or reachable Vibe Mode is not acceptance.
-- When observation helps, share the Gateway Web URL and verify CLI/Web agree on
-  Device ID, Boot ID and operation records.
+- Collect device evidence through `mosaico.py iris` CLI output: `device-status`
+  for live identity/state, `operation-status` for operation records, and `screenshot`
+  for device image files. Inspect the saved image directly; do not read device data
+  or capture device visuals by screenshotting the Gateway Web page.
+  Share the Web URL for the developer to observe when useful. Browser automation
+  and CLI/Web comparison apply when testing the workbench itself or explicitly requested.
 
 ## Provisioning and last-resort recovery
 

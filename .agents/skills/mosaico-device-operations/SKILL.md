@@ -44,8 +44,8 @@ To enter existing Vibe Mode from a reachable application, use
 5. For a live operation, apply [device selection](../../../docs/project-gateway_CN.md#设备发现与选择)
    and [state evidence checks](../../../docs/project-gateway_CN.md#实时证据与下一步).
    After coordinating ownership, use `iris run --project <project>` or `iris claim`
-   for a handshake. Confirm the live identity, Boot ID and firmware mode when Iris
-   is reachable; ROM identity is established by the product recovery workflow.
+   for a handshake. Use `iris device-status --json` to confirm live identity, Boot ID
+   and firmware mode; ROM identity is established by the product recovery workflow.
    Do not infer ROM or damaged firmware from a failed handshake alone.
 
 ## Inspect and diagnose
@@ -54,7 +54,13 @@ Read the [CLI command reference](../../../docs/mosaico-cli_CN.md#命令职责) f
 `iris logs`, `iris memory` and `iris crash`; choose only evidence relevant to the issue.
 Use a snapshot or bounded observation unless continuous monitoring was requested.
 For a debugging session across commands, follow [Gateway session usage](../../../docs/project-gateway_CN.md#开始和结束调试).
-Share its Web URL when useful and match CLI/Web identity and operation records.
+Read identity/state with `iris device-status --json` and existing operation records
+with `iris operation-status <operation-id> --json`. For visual evidence, use
+`iris screenshot <output-path> --json`, then inspect the saved device image directly.
+Keep its returned identity, Boot ID, operation ID and artifact metadata with the image.
+Do not obtain device data or visuals by reading or screenshotting the Gateway Web page.
+Share its URL for the developer to observe when useful; browser automation and
+CLI/Web comparison belong to workbench testing or an explicit user request.
 
 Report observed state separately from suspected causes. If there is no live handshake,
 describe the ownership, active transition or connection evidence and what remains

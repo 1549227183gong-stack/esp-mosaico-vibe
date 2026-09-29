@@ -15,7 +15,7 @@ python mosaico.py iris run --project projects/my_app
 ```
 
 Each `iris run` registers an independent client and stays in the foreground even
-when a Gateway already exists. Open the printed URL to access the Web workbench.
+when a Gateway already exists. Developers can open the printed URL to access the Web workbench.
 Device commands from other terminals or agents automatically reuse the same project's
 instance. Ordinary commands retain a client while running, including application
 builds, installation and reconnection waits. The workbench's event connection holds
@@ -248,10 +248,19 @@ python mosaico.py iris list --details --json
 ```
 
 After coordinating ownership, establish a live handshake with
-`iris run --project <project>` or `iris claim`. Open the Gateway Web workbench URL
-printed by the command, confirm that `GET /v1/devices/<device-id>` returns
-`stale=false`, and match Device ID and Boot ID against CLI evidence. If the device
-is offline or the handshake failed, old query results do not establish its current state.
+`iris run --project <project>` or `iris claim`. Run
+`python mosaico.py iris device-status --project <project> --json` to read live
+Device ID, Boot ID, firmware mode and `stale=false`. This command rejects cached
+status as live evidence. If the device is offline or the handshake failed, old
+query results do not establish its current state.
+
+Agents obtain status, logs and operation records through CLI JSON. Query an existing
+operation with `python mosaico.py iris operation-status <operation-id> --project <project> --json`.
+Capture device visuals with `python mosaico.py iris screenshot device.png --project <project> --json`,
+inspect the saved image directly, and retain its returned identity and operation metadata.
+Do not obtain device data or visuals by screenshotting the workbench page. Share the
+workbench URL for developers to observe; use browser automation and CLI/Web comparison
+when testing the workbench itself or explicitly requested by the user.
 
 The following table describes decisions for different situations. Check firmware
 mode, connection state and active operations separately; these situations do not

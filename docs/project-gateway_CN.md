@@ -13,7 +13,7 @@ python mosaico.py iris run --project projects/my_app
 ```
 
 每次 `iris run` 都登记一个独立客户端，已有实例时也保持前台运行。打印的 URL
-可打开 Web 工作台。其他终端或 Agent 的设备命令自动复用同项目实例。
+可供开发者打开 Web 工作台。其他终端或 Agent 的设备命令自动复用同项目实例。
 普通命令在执行期间持有客户端；应用构建、安装及等待重连也属于执行期。
 工作台的事件连接持有一个客户端，页面内部多个面板不会重复登记。
 
@@ -190,9 +190,15 @@ python mosaico.py iris list --details --json
 ```
 
 协调归属后，通过 `iris run --project <project>` 或 `iris claim` 建立实时握手。
-打开命令输出中的 Gateway Web 工作台，检查
-`GET /v1/devices/<device-id>` 返回 `stale=false`，并与 CLI 证据核对
-Device ID、Boot ID。离线或握手失败时，不能把旧查询结果当成当前状态。
+执行 `python mosaico.py iris device-status --project <project> --json`，读取实时
+Device ID、Boot ID、固件模式与 `stale=false`。该命令拒绝将缓存状态当作实时证据。
+离线或握手失败时，不能把旧查询结果当成当前状态。
+
+Agent 使用 CLI JSON 获取状态、日志和操作记录；查看已有操作使用
+`python mosaico.py iris operation-status <operation-id> --project <project> --json`。
+获取设备画面使用 `python mosaico.py iris screenshot device.png --project <project> --json`，
+直接查看保存的图像，并保留返回的身份与操作信息。不要通过截取工作台网页获取设备数据或画面。
+工作台 URL 可提供给开发者观察；仅在测试工作台自身或用户明确要求时使用浏览器自动化及 CLI/Web 对照。
 
 下表按现场情况说明决策；固件模式、连接状态和活动操作分别核对，
 这些情形并不是同一个状态枚举：

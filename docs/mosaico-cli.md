@@ -15,6 +15,7 @@ mosaico.py
 │   ├── list / claim / release / reconcile
 │   ├── takeover start / status / resume / abort / reconcile
 │   ├── logs / memory / crash / rpc
+│   ├── device-status / screenshot / operation-status
 │   ├── app-update
 │   ├── system-update
 │   └── test enter-recovery / recovery-wifi / bridge-code
@@ -41,6 +42,9 @@ For mode definitions and the AI/Boot button distinction, see
 | `iris memory` | Read memory status; `--follow` samples continuously |
 | `iris crash` | Inspect crash information; `--archive` archives and decodes the Core Dump |
 | `iris rpc` | Call the specified application RPC |
+| `iris device-status` | Read live device identity, Boot ID and firmware state; reject stale or mismatched responses |
+| `iris screenshot <output>` | Save the device image directly and return image/operation metadata; verify the same Device ID and Boot ID before and after capture |
+| `iris operation-status <operation-id>` | Query an existing operation, preserving its actual status; does not acquire a device or replay the operation |
 | `iris app-update` | Update normal application code only; requires the complete partition table to match the device |
 | `iris system-update` | Recommended entry for a new application, partition layout changes or resource changes; writes according to the update bundle manifest |
 | `recover` | Provision or restore the device's base firmware, including when ESP-Iris is unreachable |
@@ -143,11 +147,25 @@ establish acceptance.
 
 ## Debugging and recovery entry points
 
-Run `python mosaico.py iris run --project projects/my_app` and open the printed URL
-to observe the Gateway Web workbench continuously. See the
-[Gateway guide](project-gateway.md) for lifecycle, device ownership and takeover
-rules. The CLI and workbench should show the same Device ID, Boot ID and operation
-records.
+Run `python mosaico.py iris run --project projects/my_app` to retain a debugging
+session. The printed workbench URL lets the developer observe it. Agents use CLI
+output for device evidence:
+
+```sh
+python mosaico.py iris device-status --project projects/my_app --json
+python mosaico.py iris screenshot device.png --project projects/my_app --json
+python mosaico.py iris operation-status <operation-id> --project projects/my_app --json
+```
+
+Inspect the saved device image directly. Screenshot output includes its path,
+Device ID, Boot ID, operation ID and Gateway artifact metadata. A reboot during
+capture fails verification; any saved image is not proof of the current boot.
+Operation queries can start/reuse the project's Gateway to read its retained
+records, without connecting to a device. `ok: true` means the query succeeded;
+read `operation.status` for the actual outcome, including `failed` or `outcome_unknown`.
+Use browser automation and CLI/Web comparison for workbench testing or an explicit
+user request. See the [Gateway guide](project-gateway.md) for lifecycle, device
+ownership and takeover rules.
 
 After connection checks, use `recover` when neither the normal application nor
 Vibe Mode is reachable. If manual ROM entry is required, the developer follows
