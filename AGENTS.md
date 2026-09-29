@@ -25,6 +25,16 @@ AI (GPIO7) selects Vibe Mode; Boot (GPIO61) selects ROM Download Mode.
   `.agents/skills/`, local analysis in `.agents/analysis/`; this is not a secrecy boundary.
 - Inspect component source, examples and upstream docs; do not invent APIs.
 
+## Espressif MCP services
+
+- When available, use `esp-component-registry` to find ESP-IDF components and
+  retrieve their documentation; use `esp-pilot` for ADF/GMF multimedia capabilities,
+  examples, Board Manager references and relevant remote skills.
+- Check retrieved recommendations against the workspace's pinned ESP-IDF and
+  component versions and the owning source before integration. MCP guidance does
+  not replace the repository's application, build or device workflows.
+- See [MCP setup](docs/mcp-servers.md) for shared client configuration and checks.
+
 ## Engineering rules
 
 - Keep modules focused, with explicit responsibilities, ownership and data flow.

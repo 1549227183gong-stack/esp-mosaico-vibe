@@ -60,6 +60,9 @@ relative references: move or clone the whole workspace, initialize its pinned
 dependencies and rebuild. Single-application export and old workspace path
 compatibility are outside this layout. See [migration notes](docs/workspace-migration.md).
 
+Shared [Espressif MCP configuration](docs/mcp-servers.md) connects Codex, Claude Code
+and Cursor to ESP Pilot and the ESP Component Registry.
+
 Start with the [documentation index](docs/README.md). Agents follow [AGENTS.md](AGENTS.md)
 and the [skill index](.agents/skills/README.md). For ongoing observation,
 `python mosaico.py iris run --project projects/my_app` prints the Gateway Web
