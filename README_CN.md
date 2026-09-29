@@ -55,6 +55,9 @@ GSP 预览与设备使用相同的可移植 C UI 和 GSP 1.5.1 场景。
 初始化固定依赖后重新构建。此布局不提供单应用独立导出或旧工作区路径兼容，
 见[迁移说明](docs/workspace-migration_CN.md)。
 
+共享的 [Espressif MCP 配置](docs/mcp-servers_CN.md) 为 Codex、Claude Code 和 Cursor
+接入 ESP Pilot 与 ESP Component Registry。
+
 从[文档索引](docs/README_CN.md)开始。Agent 遵循 [AGENTS.md](AGENTS.md) 和
 [技能索引](.agents/skills/README.md)。持续观察时，运行
 `python mosaico.py iris run --project projects/my_app`，打开输出的 Gateway Web
