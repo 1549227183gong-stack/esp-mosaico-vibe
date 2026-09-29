@@ -15,6 +15,7 @@ mosaico.py
 │   ├── list / claim / release / reconcile
 │   ├── takeover start / status / resume / abort / reconcile
 │   ├── logs / memory / crash / rpc
+│   ├── device-status / screenshot / operation-status
 │   ├── app-update
 │   ├── system-update
 │   └── test enter-recovery / recovery-wifi / bridge-code
@@ -40,6 +41,9 @@ mosaico.py
 | `iris memory` | 读取内存状态；`--follow` 持续采样 |
 | `iris crash` | 查看崩溃信息；`--archive` 归档并解码 Core Dump |
 | `iris rpc` | 调用指定的应用 RPC |
+| `iris device-status` | 读取实时设备身份、Boot ID 和固件状态；拒绝缓存或身份不匹配的响应 |
+| `iris screenshot <output>` | 直接保存设备图像并返回图像及操作信息；核对截图前后 Device ID 和 Boot ID 一致 |
+| `iris operation-status <operation-id>` | 查询已有操作并保留其实际状态；不认领设备、不重放操作 |
 | `iris app-update` | 仅更新正常应用代码，要求完整分区表与设备一致 |
 | `iris system-update` | 新应用、分区布局或资源变化的推荐入口，按更新包清单写入 |
 | `recover` | 初始化或恢复设备基础固件，包括 ESP-Iris 不可达时的恢复 |
@@ -133,10 +137,21 @@ SHA-256 及 `system-update` 建议，不会自动扩大写入范围或修改工�
 
 ## 调试与恢复入口
 
-运行 `python mosaico.py iris run --project projects/my_app` 并打开输出中的 URL，
-可持续观察 Gateway Web 工作台。生命周期、设备占用与接管的完整规则见
-[Gateway 指南](project-gateway_CN.md)。CLI 和工作台应显示同一设备的 Device ID、
-Boot ID 和操作记录。
+运行 `python mosaico.py iris run --project projects/my_app` 保持调试会话。
+输出中的工作台 URL 可供开发者观察。Agent 通过 CLI 获取设备证据：
+
+```sh
+python mosaico.py iris device-status --project projects/my_app --json
+python mosaico.py iris screenshot device.png --project projects/my_app --json
+python mosaico.py iris operation-status <operation-id> --project projects/my_app --json
+```
+
+直接查看保存的设备图像。截图结果包含文件路径、Device ID、Boot ID、operation ID
+和 Gateway artifact 信息。截图过程中发生重启会导致验证失败；已保存的图像不能证明当前启动状态。
+操作查询可启动或复用项目 Gateway 来读取保留记录，不连接设备。
+`ok: true` 仅表示查询成功；实际结果读取 `operation.status`，包括 `failed` 或 `outcome_unknown`。
+浏览器自动化和 CLI/Web 对照用于工作台自身测试或用户明确要求的场景。
+生命周期、设备占用与接管的完整规则见 [Gateway 指南](project-gateway_CN.md)。
 
 排查连接后 normal 与 Vibe Mode 仍均不可达时，使用 `recover`。仅当命令要求
 手动进入 ROM 时，由开发者按[物理入口步骤](device-modes_CN.md#物理入口)执行；

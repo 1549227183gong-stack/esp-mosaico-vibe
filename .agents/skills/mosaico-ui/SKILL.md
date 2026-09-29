@@ -99,6 +99,9 @@ intended experience returns to loop 1.
 
 Deploy through the repository's device workflow, operate the real controls,
 and iterate from device captures, runtime measurements, and user experience.
+Obtain device images with `python mosaico.py iris screenshot <output-path> --json`
+and inspect the saved image directly. Use CLI JSON for state and operation evidence;
+do not substitute a screenshot of the Gateway Web workbench for the device image.
 Verify real data and asynchronous events as well as rendering, relevant
 resource use, performance, and stability under the intended usage.
 
