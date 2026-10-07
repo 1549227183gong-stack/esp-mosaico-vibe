@@ -29,6 +29,16 @@
 #include "freertos/task.h"
 
 static const char *TAG = "present_te_compose";
+
+/*
+ * 本工程实验（display_fps_probe）：整屏推送按行拆成 N 段，每段单独等
+ * 一次 TE 窗口准入。40MHz 下整屏 460800B 约 23.0ms，超过 TE 周期
+ * 16.85ms 的可用窗口，拆两段也不能把一帧压进一个 TE；80MHz 下单段
+ * 已约 11.5ms，可重新落回 FAST_START 窗口，因此默认使用单段。
+ * 仅保留该分支作为 QSPI 40MHz 对照实验入口。
+ */
+#define TE_COMPOSE_FULL_SPLIT_SEGMENTS 1U
+
 static void te_wait_submit_window(esp_display_present_te_compose_t *te_compose,
                                   size_t frame_bytes)
 {
@@ -159,6 +169,56 @@ static bool te_dirty_copy_to_bounce(
     return true;
 }
 
+/* 整屏推送（首帧或全屏脏区）：按配置分段，每段独占一次 TE 窗口准入。 */
+static esp_err_t te_push_full_frame_segments(
+    esp_display_present_te_compose_t *te_compose, uint8_t *pixels,
+    bool *out_submitted_any)
+{
+    const uint16_t width = te_compose->draw.width;
+    const uint16_t height = te_compose->draw.height;
+    const size_t stride_bytes = te_compose->draw.stride_bytes;
+    const uint16_t rows_per_segment = (uint16_t)(
+        (height + TE_COMPOSE_FULL_SPLIT_SEGMENTS - 1U) /
+        TE_COMPOSE_FULL_SPLIT_SEGMENTS);
+    if (height == 0 || stride_bytes == 0 || rows_per_segment == 0) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    esp_err_t ret = ESP_OK;
+    for (uint16_t y = 0; y < height && ret == ESP_OK;
+            y += rows_per_segment) {
+        uint16_t rows = (uint16_t)(height - y);
+        if (rows > rows_per_segment) {
+            rows = rows_per_segment;
+        }
+        uint8_t *segment = pixels + (size_t)y * stride_bytes;
+        const size_t segment_bytes = (size_t)rows * stride_bytes;
+        /* 先写回 cache 再等窗口，让写回耗时与 TE 等待重叠。 */
+        esp_display_present_cache_msync_framebuffer(segment, segment_bytes);
+        te_wait_submit_window(te_compose, segment_bytes);
+        ret = esp_display_present_tracker_submit_transfer_ticket(
+                  &te_compose->tracker);
+        if (ret != ESP_OK) {
+            break;
+        }
+        if (!te_compose->te_degraded) {
+            esp_display_present_te_sync_record_tx_start(te_compose->te_ctx);
+        }
+        ret = esp_display_present_blit_area(te_compose->panel, 0, y, width,
+                                            y + rows, segment);
+        if (ret != ESP_OK) {
+            esp_display_present_tracker_cancel_transfer_ticket(
+                &te_compose->tracker);
+            break;
+        }
+        *out_submitted_any = true;
+        te_compose->ever_presented = true;
+        ret = present_transfer_wait_idle(&te_compose->tracker,
+                                         te_compose->transfer_timeout_ms);
+    }
+    return ret;
+}
+
 esp_err_t present_te_compose_push_frame(
     esp_display_present_te_compose_t *te_compose,
     const esp_display_presenter_submit_t *submit, uint8_t *pixels,
@@ -169,43 +229,34 @@ esp_err_t present_te_compose_push_frame(
         return ESP_ERR_INVALID_ARG;
     }
     *out_submitted_any = false;
-    size_t frame_bytes = te_compose->draw.stride_bytes *
-                         te_compose->draw.height;
 
     /*
      * 局部脏区推送：裁切动作（CPU 拷贝 + bounce 写回）放在等待 TE 窗口
-     * 之前，窗口一到立即发起 DMA。整屏覆盖或裁切缓冲不足时回退原路径。
+     * 之前，窗口一到立即发起 DMA。整屏覆盖或裁切缓冲不足时改走分段推送。
      */
     esp_display_present_area_t dirty_area = {0};
-    bool local_dirty = te_dirty_union_to_physical(
-                           te_compose, submit, &dirty_area);
+    const bool local_dirty = te_dirty_union_to_physical(
+                                 te_compose, submit, &dirty_area);
     size_t dirty_bytes = 0;
-    if (local_dirty &&
-            te_dirty_copy_to_bounce(te_compose, &dirty_area, &dirty_bytes)) {
-        esp_display_present_cache_msync_framebuffer(
-            te_compose->dirty_bounce, dirty_bytes);
-        te_wait_submit_window(te_compose, dirty_bytes);
-    } else {
-        local_dirty = false;
-        te_wait_submit_window(te_compose, frame_bytes);
-        esp_display_present_cache_msync_framebuffer(pixels, frame_bytes);
+    if (!local_dirty ||
+            !te_dirty_copy_to_bounce(te_compose, &dirty_area, &dirty_bytes)) {
+        return te_push_full_frame_segments(te_compose, pixels,
+                                           out_submitted_any);
     }
+    esp_display_present_cache_msync_framebuffer(
+        te_compose->dirty_bounce, dirty_bytes);
+    te_wait_submit_window(te_compose, dirty_bytes);
+
     esp_err_t ret = esp_display_present_tracker_submit_transfer_ticket(
                         &te_compose->tracker);
     if (ret == ESP_OK) {
         if (!te_compose->te_degraded) {
             esp_display_present_te_sync_record_tx_start(te_compose->te_ctx);
         }
-        if (local_dirty) {
-            ret = esp_display_present_blit_area(
-                      te_compose->panel, dirty_area.x1, dirty_area.y1,
-                      dirty_area.x2 + 1, dirty_area.y2 + 1,
-                      te_compose->dirty_bounce);
-        } else {
-            ret = esp_display_present_blit_area(
-                      te_compose->panel, 0, 0, te_compose->draw.width,
-                      te_compose->draw.height, pixels);
-        }
+        ret = esp_display_present_blit_area(
+                  te_compose->panel, dirty_area.x1, dirty_area.y1,
+                  dirty_area.x2 + 1, dirty_area.y2 + 1,
+                  te_compose->dirty_bounce);
         if (ret == ESP_OK) {
             *out_submitted_any = true;
             te_compose->ever_presented = true;
@@ -214,13 +265,9 @@ esp_err_t present_te_compose_push_frame(
                 &te_compose->tracker);
         }
     }
-    esp_err_t drain_ret = ret == ESP_OK
-                          ? present_transfer_wait_idle(
-                              &te_compose->tracker,
-                              te_compose->transfer_timeout_ms)
-                          : ret;
     if (ret == ESP_OK) {
-        ret = drain_ret;
+        ret = present_transfer_wait_idle(&te_compose->tracker,
+                                         te_compose->transfer_timeout_ms);
     }
     return ret;
 }

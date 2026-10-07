@@ -32,19 +32,58 @@ mode=LOCAL wall_fps=58.4 busy_fps=122.4 render_us=369 submit_us=7735 frames=59 r
 
 `lcd.perf_log = true` 还会每 5 秒输出 GSP 集成层的帧率日志，可用于交叉校验。
 
-## 实验结果（2026-10-07）
+## 实验结果（2026-10-08）
 
 同一固件下两个模式 10s 自动切换，代表值：
 
-| 模式 | wall_fps | render_us | submit_us | 说明 |
-| --- | --- | --- | --- | --- |
-| LOCAL | 57.4–58.4 | 367–370 | 7456–7965 | TE_SYNC + 局部脏区推送，达扫描率（59.3Hz）的 98.5% |
-| FULL | 20.0 | 4322–4353 | 31883–34185 | 整屏推送回退：460800B @40MHz QSPI 实测 Ttx=23040µs > TE 周期 16850µs |
+| 轮次 | QSPI | 模式 | wall_fps | render_us | submit_us | TE 调度 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 基线 | 40MHz | LOCAL | 57.4–58.4 | 367–370 | 7456–7965 | fast/start，Ttx≈844µs |
+| 基线 | 40MHz | FULL | 19.8–20.0 | 4322–4353 | 31883–34185 | slow/end，Ttx=23040µs，占周期 138% |
+| 本轮 | 80MHz | LOCAL | 57.4–59.4 | 366–371 | 7270–8335 | fast/start，Ttx≈844µs |
+| 本轮 | 80MHz | FULL | 29.7–30.1 | 4310–4498 | 22315–22851 | fast/start，Ttx=11520µs，占周期 69% |
 
-优化前基线：LOCAL 29.4fps / FULL 20.0fps（整屏推送，TE 周期二分频）。
-根因与完整证据链见 `knowledge/display-fps.md`。结论：TE 同步无撕裂前提下的
-局部刷新上限已基本触达；全屏 60fps 受 QSPI 带宽物理限制，需要区域化更新
-或多缓冲方案才能继续提升。
+### 全屏为什么曾经只有 20 帧
+
+- `[事实]` 480x480 RGB565 整屏 = 460800B。QSPI 4 线 @40MHz 的理论传输时间
+  为 `460800×8/(40e6×4) = 23040µs`，已超过面板扫描周期 Tf≈16.8ms。
+- `[事实]` TE 只允许在"GRAM 写行头不越过面板扫描行头"的相位发起传输。
+  23040µs > 活跃扫描时间 Ta≈16.24ms，调度器判定 `slow/end`，每帧至少占满
+  3 个 TE 周期。
+- `[事实]` 面板扫描率 59.3Hz，TE 节流后的帧率只能取 `59.3/n`：
+  40MHz → `59.3/3 = 19.8fps`，80MHz → `59.3/2 = 29.7fps`。实测与量化值一致。
+
+### 整屏拆两段（40MHz）——无效
+
+`[事实]` 整屏按行拆 2 段、每段单独等一次 TE 窗口：半屏 Ttx=11797µs
+（required=71%）确实能进单个窗口，但一帧需要两次窗口准入，实测 FULL 仍为
+19.8fps，且上下半屏落在不同扫描周期，撕裂风险上升。该分支保留在
+`present_te_transport.c` 的 `TE_COMPOSE_FULL_SPLIT_SEGMENTS` 宏后，默认 1。
+
+### 30fps 是不是全屏上限
+
+- `[事实]` 80MHz 下 FULL 每帧串行路径为"栅格化 4310–4498µs + submit
+  22315–22851µs ≈ 27ms"（submit 含等待 TE 窗口与 DMA 传输本身），已超过
+  一个 TE 周期 16.78ms，所以每帧必然占用 2 个 TE 槽位。
+- `[事实]` 即使把等待压到 0，可压缩骨架仍是传输 11520µs + 栅格化
+  4310–4498µs ≈ 16.0ms，对照 16.78ms 只剩约 0.8ms 余量，整屏脏区还需
+  cache 回写与首个 TE 相位对齐。
+- `[推断]` 因此"渲染整屏 → 整屏推送"的串行流水只能锁在 2 个 TE 周期
+  （29.7fps）。要接近 59.3fps，必须让栅格化与 DMA 传输重叠（双缓冲 +
+  历史脏区跟踪）；继续提高总线时钟已无空间（80MHz 是 ESP32-S3 SPI 主机上限）。
+
+根因与完整证据链见 `knowledge/display-fps.md`。
+
+## QSPI 80MHz 实现方式
+
+`main/board_display.c` 不再调用 BSP 的 `bsp_display_new()`（其
+`BSP_LCD_PIXEL_CLOCK_HZ` 硬编码 40MHz），改为在工程内复刻最小初始化路径：
+电源与板型判定、QSPI 总线、CO5300 命令表、驱动能力、TE 配置，只把面板 IO
+时钟与 TE 估算时钟改成 80MHz。触摸与启动画面交接仍复用 BSP 公共接口
+（`bsp_touch_new` / `mosaico_boot_handoff_consume`）。
+
+风险：80MHz 超出官方 BSP 既有配置，属实验性外推，长稳、EMI 与不同温度下的
+信号完整性尚未复核（`[未验证]`）。
 
 ## 构建
 
@@ -155,11 +194,14 @@ ESP-Iris 运行时 → ESP-IDF 虚拟环境，优先选择能导入 pyserial 的
 ## 变量矩阵
 
 已完成：`CONFIG_ESP_GSP_ACTIVE_TICK_MS=10`（原 16ms 错位）、`fb.mode` 解析为
-`TE_SYNC`、TE 局部脏区推送补丁。后续仍按一次只改一个变量的原则扩展：
+`TE_SYNC`、TE 局部脏区推送补丁、整屏拆段对照（无效，默认关闭）、
+CO5300 QSPI 40MHz → 80MHz（全屏 19.8 → 29.7fps）。后续仍按一次只改一个变量
+的原则扩展：
 
-- CO5300 QSPI 时钟：40 / 45 / 50 MHz。
+- 栅格化与 DMA 重叠（双缓冲 + 历史脏区跟踪），目标突破 `59.3/2`。
 - `esp_display_present` 的 `fb.mode`：`DOUBLE_PARTIAL` / patch 版多缓冲局部推送。
 - `drawbuf.lines`、`drawbuf.buffers`、`te_compose_buffers`。
+- QSPI 回退档位（60 / 50MHz）用于对比 80MHz 的信号裕量。
 
 每次实验记录完整 sdkconfig、日志原始文件和结论；结论统一写入 `knowledge/`
 并使用 `[事实]`、`[推断]`、`[未验证]` 标签标注证据等级。
