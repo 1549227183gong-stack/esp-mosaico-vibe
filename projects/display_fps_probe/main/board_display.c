@@ -39,6 +39,11 @@ esp_err_t board_display_init(esp_display_present_target_config_t *out_target)
 #endif
         },
         .fb = {
+            /*
+             * 实验：AUTO 在 GRAM+TE 条件下解析为 TE_SYNC，配合本地
+             * esp_display_present 补丁的"TE 同步 + 局部脏区推送"，验证
+             * 80x80 局部刷新在无撕裂前提下的帧率上限。
+             */
             .mode = ESP_DISPLAY_PRESENT_MODE_AUTO,
         },
     };

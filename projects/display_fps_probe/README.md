@@ -17,20 +17,34 @@
 - `LOCAL`：只让 80x80 方块在 480 像素宽度内往返，制造局部脏区。
 - `FULL`：整屏双色背景交替，强制产生全屏脏区。
 
-`main/fps_probe.c` 用 16ms 定时器驱动动画，用 1s 窗口差分 GSP 累计计数。
-单行日志字段含义：
+`main/fps_probe.c` 用 10ms 定时器驱动动画（与 `CONFIG_ESP_GSP_ACTIVE_TICK_MS=10`
+对齐），用 1s 窗口差分 GSP 累计计数。单行日志字段含义：
 
 ```text
-mode=LOCAL wall_fps=59.9 busy_fps=59.8 render_ms=2.10 submit_ms=1.30 frames=60 regions=1/1 full=0 pixels=6400/6400 err=0
+mode=LOCAL wall_fps=58.4 busy_fps=122.4 render_us=369 submit_us=7735 frames=59 regions=6854/6854 full=0 pixels=721581296/721581296 err=0
 ```
 
 - `wall_fps`：墙钟时间内完成的非空闲帧率。
 - `busy_fps`：GSP 实际忙于产帧的时间占比对应的帧率。
-- `render_ms` / `submit_ms`：每帧栅格化与提交阶段平均耗时。
-- `regions`：输入/输出脏区计划数；`full` 表示整屏提升次数。
-- `pixels`：输入/输出脏区像素数；`err` 是最近一次 setter 错误码。
+- `render_us` / `submit_us`：窗口内每帧栅格化与提交阶段平均耗时。
+- `regions`：输入/输出脏区计划累计数；`full` 表示整屏提升累计次数。
+- `pixels`：输入/输出脏区像素累计数；`err` 是最近一次 setter 错误码。
 
 `lcd.perf_log = true` 还会每 5 秒输出 GSP 集成层的帧率日志，可用于交叉校验。
+
+## 实验结果（2026-10-07）
+
+同一固件下两个模式 10s 自动切换，代表值：
+
+| 模式 | wall_fps | render_us | submit_us | 说明 |
+| --- | --- | --- | --- | --- |
+| LOCAL | 57.4–58.4 | 367–370 | 7456–7965 | TE_SYNC + 局部脏区推送，达扫描率（59.3Hz）的 98.5% |
+| FULL | 20.0 | 4322–4353 | 31883–34185 | 整屏推送回退：460800B @40MHz QSPI 实测 Ttx=23040µs > TE 周期 16850µs |
+
+优化前基线：LOCAL 29.4fps / FULL 20.0fps（整屏推送，TE 周期二分频）。
+根因与完整证据链见 `knowledge/display-fps.md`。结论：TE 同步无撕裂前提下的
+局部刷新上限已基本触达；全屏 60fps 受 QSPI 带宽物理限制，需要区域化更新
+或多缓冲方案才能继续提升。
 
 ## 构建
 
@@ -50,6 +64,18 @@ python "E:\esp-mosaico\workspace\vibe\submodule\esp-mosaico-utils\mosaico-tools\
 - `build/display_fps_probe.bin`
 - `build/esp-idf/main/gsp_gen_bundle/bundle_gsp.h`
 - `build/esp-idf/main/gsp_gen_bundle/scene0/probe_objects.h`
+
+## 本地 present 组件补丁
+
+TE 局部脏区推送实验在 `components/espressif__esp_display_present/` 内实现
+（基线为官方 1.1.1 全量复制）。`main/idf_component.yml` 通过 `override_path`
+把该传递依赖固定到工程内副本，防止组件管理器用注册表版本覆盖补丁。
+补丁要点：
+
+- producer 侧在 tile 提交成功时累积帧级脏区并集（`te_frame_dirty_add()`）。
+- transport 侧优先使用 submit AREAS，其次使用帧累积并集，首帧强制整屏。
+- 局部区超过 64KB bounce 缓冲或映射失败时自动回退整屏推送。
+- 多缓冲 + pipeline 路径保持整屏推送（交替缓冲下帧累积脏区不可靠）。
 
 ## Windows 构建修复
 
@@ -106,11 +132,11 @@ ESP-Iris 运行时 → ESP-IDF 虚拟环境，优先选择能导入 pyserial 的
 
 ## 变量矩阵
 
-基线测量完成后，按一次只改一个变量的原则扩展：
+已完成：`CONFIG_ESP_GSP_ACTIVE_TICK_MS=10`（原 16ms 错位）、`fb.mode` 解析为
+`TE_SYNC`、TE 局部脏区推送补丁。后续仍按一次只改一个变量的原则扩展：
 
 - CO5300 QSPI 时钟：40 / 45 / 50 MHz。
-- `CONFIG_ESP_GSP_ACTIVE_TICK_MS`：10 / 6 / 16。
-- `esp_display_present` 的 `fb.mode`：`AUTO` / `TE_SYNC` / `DOUBLE_PARTIAL`。
+- `esp_display_present` 的 `fb.mode`：`DOUBLE_PARTIAL` / patch 版多缓冲局部推送。
 - `drawbuf.lines`、`drawbuf.buffers`、`te_compose_buffers`。
 
 每次实验记录完整 sdkconfig、日志原始文件和结论；结论统一写入 `knowledge/`

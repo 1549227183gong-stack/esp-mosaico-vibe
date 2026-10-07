@@ -123,7 +123,7 @@
       "y": 292,
       "w": 424,
       "h": 22,
-      "text": "TICK 16 MS - SAMPLE 1 S - MODE 10 S",
+      "text": "TICK 10 MS - SAMPLE 1 S - MODE 10 S",
       "font_size": 15,
       "fg_color": "#70706C"
     },

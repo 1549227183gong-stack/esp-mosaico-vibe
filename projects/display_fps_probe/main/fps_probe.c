@@ -5,7 +5,7 @@
  * - LOCAL：只移动 80x80 方块，制造局部脏区；
  * - FULL ：整屏双色背景交替，制造全屏脏区。
  *
- * 16ms 定时器驱动负载，1s 定时器采样 ESP-GSP 的帧计数与渲染阶段
+ * 10ms 定时器驱动负载（与 GSP 活动节拍对齐），1s 定时器采样帧计数与渲染阶段
  * 耗时，输出便于跨构建对比的单行指标。PC 后端只验证逻辑，不提供
  * 设备侧调试计数器。
  */
@@ -23,7 +23,11 @@
 #include "esp_timer.h"
 #endif
 
-#define PROBE_TICK_PERIOD_MS  16U
+/*
+ * 实验：与 CONFIG_ESP_GSP_ACTIVE_TICK_MS=10 对齐。原先 16ms 与 10ms
+ * 节拍错位，使每帧实际落到两个 GSP tick（约 20ms）上。
+ */
+#define PROBE_TICK_PERIOD_MS  10U
 #define PROBE_SAMPLE_PERIOD_MS 1000U
 #define PROBE_MODE_PERIOD_MS  10000U
 #define PROBE_MODE_TICKS      (PROBE_MODE_PERIOD_MS / PROBE_TICK_PERIOD_MS)
