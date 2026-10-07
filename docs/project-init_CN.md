@@ -25,7 +25,8 @@ python mosaico.py project init my_app
 
 初始化 BSP，准备 ESP-IDF `master` 固定提交
 `7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe`（目标 `esp32s31`）后，构建生成工程并执行。
-用 `git -C "$IDF_PATH" rev-parse HEAD` 核对完整 SHA；不要直接跟随最新 `master`：
+用 `git -C "$IDF_PATH" rev-parse HEAD` 核对完整 SHA；不要直接跟随最新 `master`。
+不要用 ESP-IDF 5.2.1 构建：它不支持 `esp32s31`，仅限主机侧 Python 与静态检查：
 
 ```sh
 python mosaico.py project sim --project projects/my_app --interactive

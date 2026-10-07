@@ -52,6 +52,8 @@ AI (GPIO7) selects Vibe Mode; Boot (GPIO61) selects ROM Download Mode.
 
 - Use Python **3.10+**, target **esp32s31**, and ESP-IDF at exactly
   **`7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe`**, not the latest `master`.
+- An ESP-IDF 5.2.1 install does not support `esp32s31`; it must not build
+  firmware and is limited to host-side Python and static checks.
 - Before ESP-IDF work, verify the checkout with `git -C <idf-path> rev-parse HEAD`
   and follow [build doctor/build workflow](.agents/skills/idf-low-noise-build/SKILL.md).
   Check Python, target support and application/Vibe Mode manifest constraints;

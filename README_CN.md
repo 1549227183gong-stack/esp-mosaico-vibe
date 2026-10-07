@@ -9,6 +9,7 @@
 
 本工作区最低要求 **Python 3.10**。固件构建固定使用 ESP-IDF `master` 的
 **`7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe`** 提交，目标为 `esp32s31`。
+ESP-IDF 5.2.1 不支持 `esp32s31`，不能构建本固件，仅限主机侧 Python 与静态检查。
 系统没有 `python` 命令时，下文使用 `python3`。
 
 ```sh

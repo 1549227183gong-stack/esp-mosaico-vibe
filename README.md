@@ -10,6 +10,8 @@ submodules, documentation and Agent guidance. Applications are created on demand
 
 This workspace requires **Python 3.10+**. Firmware builds use ESP-IDF `master`
 at **`7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe`** for `esp32s31`.
+An ESP-IDF 5.2.1 install does not support `esp32s31`; it must not build this
+firmware and is limited to host-side Python and static checks.
 Creation does not require ESP-IDF, a board, BSP or the game engine.
 Use `python3` in the commands below if your system has no `python` command.
 

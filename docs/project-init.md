@@ -33,7 +33,9 @@ from any nested directory in the workspace, or select a workspace with
 Initialize BSP and prepare ESP-IDF `master` at the fixed commit
 `7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe` for target `esp32s31`. Build the
 generated project, then run the preview below. Verify the full SHA with
-`git -C "$IDF_PATH" rev-parse HEAD`; do not follow the latest `master`:
+`git -C "$IDF_PATH" rev-parse HEAD`; do not follow the latest `master`. Do not
+build with an ESP-IDF 5.2.1 install: it does not support `esp32s31` and is
+limited to host-side Python and static checks:
 
 ```sh
 python mosaico.py project sim --project projects/my_app --interactive
