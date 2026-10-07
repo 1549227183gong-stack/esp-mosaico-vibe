@@ -12,22 +12,23 @@
 #include "mosaico_boot_handoff.h"
 #include "sdkconfig.h"
 
-static const char *TAG = "fps_board";
+static const char *TAG = "hello_fps_board";
 
 /*
  * BSP 2.0 的 CO5300 面板 IO 固定为 40MHz。本探针需要验证 QSPI 带宽是否
- * 是整屏 20fps 的直接原因，因此在工程内复制最小初始化路径，只把面板
- * IO 时钟提高到 80MHz；电源、启动画面交接和触摸仍复用 BSP 公共接口。
+ * 是整屏 20fps 的直接原因，因此在工程内复制最小初始化路径（方案来自
+ * display_fps_probe 的实测结论），只把面板 IO 时钟提高到 80MHz；电源、
+ * 启动画面交接和触摸仍复用 BSP 公共接口。
  */
-#define FPS_PROBE_QSPI_CLOCK_HZ (80 * 1000 * 1000)
+#define HELLO_FPS_QSPI_CLOCK_HZ (80 * 1000 * 1000)
 
 /*
  * BSP 默认 CONFIG_BSP_LCD_QSPI_DRIVE_CAP=0（约 5mA，最弱档，用于降低
  * EMI）。该档在 40MHz 下够用，但 80MHz 边沿周期减半后会偶发采样错误
  * （实测为局部绿色闪）。BSP Kconfig 明确建议高频下提高该值，这里固定
- * 到 2（约 20mA），只影响本探针，不修改 BSP 全局配置。
+ * 到 2（约 20mA），只影响本工程，不修改 BSP 全局配置。
  */
-#define FPS_PROBE_QSPI_DRIVE_CAP (GPIO_DRIVE_CAP_2)
+#define HELLO_FPS_QSPI_DRIVE_CAP (GPIO_DRIVE_CAP_2)
 
 static const co5300_lcd_init_cmd_t s_vendor_init[] = {
     {0x11, NULL, 0, 600},
@@ -66,7 +67,7 @@ static const co5300_lcd_init_cmd_t s_handoff_init[] = {
 
 static esp_err_t apply_qspi_drive_cap(gpio_num_t lcd_scl)
 {
-    const gpio_drive_cap_t strength = FPS_PROBE_QSPI_DRIVE_CAP;
+    const gpio_drive_cap_t strength = HELLO_FPS_QSPI_DRIVE_CAP;
     const gpio_num_t pins[] = {
         lcd_scl, BSP_LCD_DATA0, BSP_LCD_DATA1, BSP_LCD_DATA2, BSP_LCD_DATA3,
     };
@@ -110,7 +111,7 @@ static esp_err_t create_80mhz_panel(esp_lcd_panel_handle_t *out_panel,
 
     esp_lcd_panel_io_spi_config_t io_config =
         CO5300_PANEL_IO_QSPI_CONFIG(BSP_LCD_CS, NULL, NULL);
-    io_config.pclk_hz = FPS_PROBE_QSPI_CLOCK_HZ;
+    io_config.pclk_hz = HELLO_FPS_QSPI_CLOCK_HZ;
     io_config.flags.psram_dma_direct = true;
     ESP_GOTO_ON_ERROR(esp_lcd_new_panel_io_spi(
                           (esp_lcd_spi_bus_handle_t)BSP_LCD_SPI_HOST,
@@ -153,7 +154,7 @@ static esp_err_t create_80mhz_panel(esp_lcd_panel_handle_t *out_panel,
     *out_io = io;
     ESP_LOGI(TAG,
              "CO5300 ready: QSPI=%dHz lines=%d data=%d-%d-%d-%d CS=%d RST=%d TE=%d boot_handoff=%d",
-             FPS_PROBE_QSPI_CLOCK_HZ, BSP_LCD_DATA_WIDTH, BSP_LCD_DATA0,
+             HELLO_FPS_QSPI_CLOCK_HZ, BSP_LCD_DATA_WIDTH, BSP_LCD_DATA0,
              BSP_LCD_DATA1, BSP_LCD_DATA2, BSP_LCD_DATA3, BSP_LCD_CS,
              lcd_rst, BSP_LCD_TE, boot_panel_ready ? 1 : 0);
     return ESP_OK;
@@ -193,7 +194,7 @@ esp_err_t board_display_init(esp_display_present_target_config_t *out_target)
             .te_enabled = true,
             .te_sync = {
                 .gpio_num = BSP_LCD_TE,
-                .bus_freq_hz = FPS_PROBE_QSPI_CLOCK_HZ,
+                .bus_freq_hz = HELLO_FPS_QSPI_CLOCK_HZ,
                 .data_lines = BSP_LCD_DATA_WIDTH,
             },
 #endif
