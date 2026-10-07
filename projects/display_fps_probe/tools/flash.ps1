@@ -8,11 +8,18 @@
       1. 增量构建 system-update 系统包（应用 + 资源 + 分区表）；
       2. 通过 Vibe Mode 原子写入设备。
 
+    无变化短路：若本次构建与上次成功烧录完全一致（系统包与 ELF 的
+    SHA-256 均相同），且设备正在运行同一固件，则跳过写入。
+    重复烧录同一份固件没有意义，写入耗时主要受设备端 NAND 限制。
+
     设备处于 ROM 下载模式（无 Vibe Mode / ESP-Iris）时，先用 -RecoverFirst
     恢复基础固件，再执行系统更新。
 
 .PARAMETER SkipBuild
     跳过构建，复用 build 目录中已有的 *-system-update.irisfw。
+
+.PARAMETER Force
+    忽略无变化短路，即使设备已运行当前构建也强制重新烧录。
 
 .PARAMETER RecoverFirst
     先执行 mosaico.py recover 恢复基础固件（Vibe Mode），再烧录本工程。
@@ -47,6 +54,7 @@
 [CmdletBinding()]
 param(
     [switch]$SkipBuild,
+    [switch]$Force,
     [switch]$RecoverFirst,
     [string]$DeviceId,
     [int]$TimeoutSeconds = 0,
@@ -58,6 +66,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 # 判断目录是否为可用的 ESP-IDF 检出。
 function Test-IdfCheckout {
@@ -149,9 +158,110 @@ function Invoke-PythonCommand {
     }
 }
 
+# 执行一条 python 命令并捕获输出（用于解析 device-status 的 JSON）。
+function Invoke-PythonCapture {
+    param(
+        [string]$PythonPath,
+        [string[]]$Arguments,
+        [string]$WorkingDirectory
+    )
+    Push-Location -LiteralPath $WorkingDirectory
+    try {
+        $output = & $PythonPath @Arguments 2>&1 | Out-String
+        $exitCode = if ($null -eq $LASTEXITCODE) { 1 } else { [int]$LASTEXITCODE }
+        return [pscustomobject]@{
+            ExitCode = $exitCode
+            Output   = $output
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
+# 计算文件 SHA-256（小写十六进制）。
+function Get-FileSha256 {
+    param([string]$Path)
+    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+
+# 读取上次成功烧录的构建指纹；不存在或损坏时返回 $null。
+function Read-FlashState {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $null
+    }
+    try {
+        return (Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json)
+    } catch {
+        return $null
+    }
+}
+
+# 查询设备 live 固件信息；查询失败时返回 $null（调用方按“需要烧录”处理）。
+function Get-DeviceFirmwareStatus {
+    param(
+        [string]$PythonPath,
+        [string]$EntryScript,
+        [string]$WorkingDirectory,
+        [string]$ProjectRelativePath,
+        [string]$DeviceId
+    )
+    $arguments = @($EntryScript, "iris", "device-status", "--project", $ProjectRelativePath)
+    if (-not [string]::IsNullOrWhiteSpace($DeviceId)) {
+        $arguments += @("--device-id", $DeviceId)
+    }
+    $result = Invoke-PythonCapture -PythonPath $PythonPath `
+        -Arguments $arguments -WorkingDirectory $WorkingDirectory
+    if ($result.ExitCode -ne 0) {
+        return $null
+    }
+    # mosaico.py 在 JSON 之前会打印进度行，这里截取首个 "{" 到最后一个 "}"。
+    $text = $result.Output
+    $start = $text.IndexOf("{")
+    $end = $text.LastIndexOf("}")
+    if ($start -lt 0 -or $end -le $start) {
+        return $null
+    }
+    try {
+        $status = $text.Substring($start, $end - $start + 1) | ConvertFrom-Json
+    } catch {
+        return $null
+    }
+    if ($status.PSObject.Properties.Name -contains "device") {
+        return $status.device
+    }
+    return $status
+}
+
+# 判断给定路径中是否有晚于构建产物的修改；命中时不能复用旧构建。
+function Test-AnySourceNewer {
+    param(
+        [string[]]$Paths,
+        [datetime]$ArtifactTimeUtc
+    )
+    foreach ($path in $Paths) {
+        if (-not (Test-Path -LiteralPath $path)) {
+            continue
+        }
+        $item = Get-Item -LiteralPath $path
+        if ($item.PSIsContainer) {
+            $hit = Get-ChildItem -LiteralPath $path -Recurse -File -ErrorAction SilentlyContinue |
+                Where-Object { $_.LastWriteTimeUtc -gt $ArtifactTimeUtc } |
+                Select-Object -First 1
+        } else {
+            $hit = if ($item.LastWriteTimeUtc -gt $ArtifactTimeUtc) { $item } else { $null }
+        }
+        if ($null -ne $hit) {
+            return $true
+        }
+    }
+    return $false
+}
+
 # 1. 定位工程与仓库根目录（脚本位于 <工程>/tools）。
 $projectRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 $repoRoot = (Resolve-Path -LiteralPath (Join-Path $projectRoot "..\..")).Path
+$projectRelativePath = $projectRoot.Substring($repoRoot.Length).TrimStart("\", "/") -replace "\\", "/"
 $entryScript = Join-Path $repoRoot "mosaico.py"
 if (-not (Test-Path -LiteralPath $entryScript -PathType Leaf)) {
     throw "未找到 mosaico.py 入口：$entryScript"
@@ -242,11 +352,97 @@ if ($SkipBuild) {
     }
 }
 
-# 7. 构建并烧录系统更新包。
+# 7. 无变化短路：本地构建与上次成功烧录指纹一致，且设备正在运行同一
+#    固件（device-status 的 firmware_sha256 与本地 ELF 相同）时跳过写入。
+$statePath = Join-Path $projectRoot "build\.flash-state.json"
+$elfPath = Join-Path $projectRoot "build\display_fps_probe.elf"
+# 影响固件的本地路径：工程源码、构建输入，以及 idf_component.yml 中
+# override_path 指向的本地组件。flash.ps1 自身变化不触发重烧。
+$watchPaths = New-Object System.Collections.Generic.List[string]
+foreach ($relative in @(
+    "main", "ui", "components",
+    "CMakeLists.txt", "partitions.csv",
+    "sdkconfig.defaults", "sdkconfig.application.defaults",
+    "dependencies.lock",
+    "tools\gspc_depfile_fix.py", "tools\gspc_depfile_fix.cmd.in"
+)) {
+    $watchPath = Join-Path $projectRoot $relative
+    if (Test-Path -LiteralPath $watchPath) {
+        $watchPaths.Add($watchPath)
+    }
+}
+$manifestPath = Join-Path $projectRoot "main\idf_component.yml"
+if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
+    $manifestText = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8
+    foreach ($match in [regex]::Matches($manifestText, 'override_path:\s*"([^"]+)"')) {
+        $dependencyPath = Join-Path (Join-Path $projectRoot "main") $match.Groups[1].Value
+        if (Test-Path -LiteralPath $dependencyPath -PathType Container) {
+            $watchPaths.Add((Resolve-Path -LiteralPath $dependencyPath).Path)
+        }
+    }
+}
+if (-not $Force -and -not $RecoverFirst) {
+    $candidateBundle = @(
+        Get-ChildItem -LiteralPath (Join-Path $projectRoot "build") `
+            -Filter "*-system-update.irisfw" -File -ErrorAction SilentlyContinue
+    ) | Select-Object -First 1
+    if ($null -ne $candidateBundle -and (Test-Path -LiteralPath $elfPath -PathType Leaf)) {
+        $sourcesTouched = Test-AnySourceNewer -Paths $watchPaths `
+            -ArtifactTimeUtc $candidateBundle.LastWriteTimeUtc
+        if ($sourcesTouched) {
+            Write-Host "[烧录] 检测到本地源码晚于上次构建，执行完整构建与烧录。"
+        } else {
+            $bundleHash = Get-FileSha256 -Path $candidateBundle.FullName
+            $elfHash = Get-FileSha256 -Path $elfPath
+            $previous = Read-FlashState -Path $statePath
+            $previousBundle = $null
+            $previousElf = $null
+            if ($null -ne $previous) {
+                if ($previous.PSObject.Properties.Name -contains "bundle_sha256") {
+                    $previousBundle = $previous.bundle_sha256
+                }
+                if ($previous.PSObject.Properties.Name -contains "elf_sha256") {
+                    $previousElf = $previous.elf_sha256
+                }
+            }
+            if ($null -ne $previousBundle -and $previousBundle -eq $bundleHash -and
+                $null -ne $previousElf -and $previousElf -eq $elfHash) {
+                Write-Host "[烧录] 本地构建与上次烧录一致，核对设备固件…"
+                $device = Get-DeviceFirmwareStatus -PythonPath $Python -EntryScript $entryScript `
+                    -WorkingDirectory $repoRoot -ProjectRelativePath $projectRelativePath `
+                    -DeviceId $DeviceId
+                $deviceSha = $null
+                $deviceMode = $null
+                if ($null -ne $device) {
+                    if ($device.PSObject.Properties.Name -contains "firmware_sha256") {
+                        $deviceSha = $device.firmware_sha256
+                    }
+                    if ($device.PSObject.Properties.Name -contains "firmware_mode") {
+                        $deviceMode = $device.firmware_mode
+                    }
+                }
+                if ($null -ne $deviceSha -and $deviceSha.ToLowerInvariant() -eq $elfHash -and
+                    $deviceMode -eq "normal") {
+                    $stopwatch.Stop()
+                    Write-Host "[烧录] 设备已运行当前构建（firmware_sha256=$deviceSha），跳过烧录。" -ForegroundColor Green
+                    Write-Host ("[烧录] 核对耗时 {0:F1} 秒；需要强制重烧时使用 -Force。" -f $stopwatch.Elapsed.TotalSeconds)
+                    exit 0
+                }
+                if ($null -eq $device) {
+                    Write-Host "[烧录] 无法读取设备固件状态，继续执行烧录。"
+                } else {
+                    Write-Host "[烧录] 设备固件与当前构建不一致，继续执行烧录。"
+                }
+            }
+        }
+    }
+}
+
+# 8. 构建并烧录系统更新包。
 $cliArguments = @(
     $entryScript,
     "iris", "system-update",
-    "--project", "projects/display_fps_probe"
+    "--project", $projectRelativePath
 )
 if ($SkipBuild) {
     $cliArguments += "--skip-build"
@@ -267,8 +463,30 @@ $flashExit = Invoke-PythonCommand -PythonPath $Python `
 
 if ($flashExit -ne 0) {
     Write-Host "[烧录] 失败，mosaico.py 退出码：$flashExit" -ForegroundColor Red
+    Write-Host "[烧录] 设备处于 ROM 下载模式时，可加 -RecoverFirst 先恢复基础固件。"
     exit $flashExit
 }
 
-Write-Host "[烧录] 完成：display_fps_probe 已写入设备。" -ForegroundColor Green
+# 9. 记录本次成功烧录的构建指纹，供下次无变化短路使用。
+try {
+    $flashedBundle = @(
+        Get-ChildItem -LiteralPath (Join-Path $projectRoot "build") `
+            -Filter "*-system-update.irisfw" -File -ErrorAction SilentlyContinue
+    ) | Select-Object -First 1
+    if ($null -ne $flashedBundle -and (Test-Path -LiteralPath $elfPath -PathType Leaf)) {
+        $record = [ordered]@{
+            bundle_sha256  = Get-FileSha256 -Path $flashedBundle.FullName
+            elf_sha256     = Get-FileSha256 -Path $elfPath
+            bundle         = $flashedBundle.Name
+            bundle_bytes   = $flashedBundle.Length
+            flashed_at_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+        }
+        $record | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding UTF8
+    }
+} catch {
+    Write-Warning "[烧录] 记录构建指纹失败：$($_.Exception.Message)"
+}
+
+$stopwatch.Stop()
+Write-Host ("[烧录] 完成：display_fps_probe 已写入设备（总耗时 {0:F1} 秒）。" -f $stopwatch.Elapsed.TotalSeconds) -ForegroundColor Green
 exit 0

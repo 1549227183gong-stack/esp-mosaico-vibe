@@ -115,6 +115,12 @@ PC 后端可以验证场景加载、可视性切换和定时器回调；sim_brid
 # 增量构建系统包并烧录（首次安装、分区表或资源变化时使用）
 powershell -ExecutionPolicy Bypass -File tools\flash.ps1
 
+# 重复烧录同一份构建：自动核对并跳过（实测约 9 秒）
+powershell -ExecutionPolicy Bypass -File tools\flash.ps1
+
+# 强制重新烧录（忽略无变化短路）
+powershell -ExecutionPolicy Bypass -File tools\flash.ps1 -Force
+
 # 设备处于 ROM 下载模式（无 ESP-Iris）时：先恢复基础固件再烧录
 powershell -ExecutionPolicy Bypass -File tools\flash.ps1 -RecoverFirst
 
@@ -122,13 +128,29 @@ powershell -ExecutionPolicy Bypass -File tools\flash.ps1 -RecoverFirst
 powershell -ExecutionPolicy Bypass -File tools\flash.ps1 -SkipBuild
 ```
 
+无变化短路的判定条件（全部命中才跳过）：
+
+1. `build/*-system-update.irisfw` 与 `build/display_fps_probe.elf` 的
+   SHA-256 与 `build/.flash-state.json` 中上次成功烧录的记录一致；
+2. 工程源码与 `idf_component.yml` 中 `override_path` 本地组件均未晚于
+   构建产物修改；
+3. 设备 `device-status` 返回的 `firmware_sha256` 与本地 ELF 一致，
+   且 `firmware_mode=normal`。
+
+任一条件不满足都会退回完整构建与烧录流程。烧录耗时构成实测：
+完整流程约 39–53 秒（其中设备端写入约 20 秒，受 NAND 速度限制，
+端口配置无法优化），短路核对约 9 秒。
+
 脚本省略 `-Python` 时会自动探测可用解释器：PATH 中的 python →
 ESP-Iris 运行时 → ESP-IDF 虚拟环境，优先选择能导入 pyserial 的解释器。
 
 可选参数：`-DeviceId`（多设备时指定目标）、`-TimeoutSeconds`（烧录超时）、
 `-RecoverTimeoutSeconds`（恢复超时）、`-Python`（python 解释器）、
-`-IdfPath`（ESP-IDF 路径）、`-ExtraArgs`（透传给 `iris system-update`）。
-仅在分区表和资源完全一致时才改用 `mosaico.py iris app-update`。
+`-IdfPath`（ESP-IDF 路径）、`-Force`（强制重烧）、
+`-ExtraArgs`（透传给 `iris system-update`）。
+仅在分区表和资源完全一致时才改用 `mosaico.py iris app-update`；实测本设备
+在 system-update 后直接 app-update 会因缺少 Vibe Mode 验证记录要求先
+`recover`，因此默认流程仍走 system-update。
 
 ## 变量矩阵
 
