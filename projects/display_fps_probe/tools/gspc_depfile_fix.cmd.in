@@ -1,0 +1,11 @@
+@echo off
+REM ---------------------------------------------------------------------------
+REM 本文件由 CMake 生成到构建目录（模板：tools/gspc_depfile_fix.cmd.in）。
+REM 作用：先调用真实 gspc，再规范化它写出的 depfile，其余参数原样透传。
+REM 原因：gspc 0.6.1 在 Windows 上把资源写成 \\?\ 扩展路径，Ninja 无法解析，
+REM       会让下一次增量构建在启动阶段直接失败。
+REM ---------------------------------------------------------------------------
+"@MOSAICO_GSPC_REAL_EXECUTABLE@" %*
+if errorlevel 1 exit /b %errorlevel%
+"@MOSAICO_GSPC_FIX_PYTHON@" "@MOSAICO_GSPC_FIX_SCRIPT@" %*
+exit /b %errorlevel%

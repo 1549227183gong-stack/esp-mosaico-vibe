@@ -1,0 +1,150 @@
+{
+  "screen": "probe",
+  "w": 480,
+  "h": 480,
+  "screen_bg": "#F6F6F3",
+  "font": "fonts/DejaVuSans.ttf",
+  "default_font_size": 20,
+  "swipe": false,
+  "objects": [
+    {
+      "type": "container",
+      "parent": -1,
+      "x": 0,
+      "y": 0,
+      "w": 480,
+      "h": 480,
+      "bg_color": "#F6F6F3",
+      "name": "bg_a",
+      "bind": "bg_a",
+      "bind_target": "visible"
+    },
+    {
+      "type": "container",
+      "parent": -1,
+      "x": 0,
+      "y": 0,
+      "w": 480,
+      "h": 480,
+      "bg_color": "#E9E4DA",
+      "name": "bg_b",
+      "bind": "bg_b",
+      "bind_target": "visible",
+      "hidden": true
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 28,
+      "y": 22,
+      "w": 300,
+      "h": 30,
+      "text": "FPS PROBE",
+      "font_size": 25,
+      "fg_color": "#101010",
+      "font": "fonts/DejaVuSans-Bold.ttf"
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 28,
+      "y": 52,
+      "w": 340,
+      "h": 22,
+      "text": "CO5300 QSPI 480x480",
+      "font_size": 16,
+      "fg_color": "#70706C"
+    },
+    {
+      "type": "container",
+      "parent": -1,
+      "x": 28,
+      "y": 84,
+      "w": 424,
+      "h": 1,
+      "bg_color": "#CBCBC6",
+      "radius": 0
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 28,
+      "y": 110,
+      "w": 330,
+      "h": 120,
+      "text": "0.0",
+      "font_size": 96,
+      "fg_color": "#101010",
+      "font": "fonts/DejaVuSans-Bold.ttf",
+      "name": "fps_text",
+      "bind": "fps_text",
+      "font_charset": "0123456789."
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 356,
+      "y": 176,
+      "w": 96,
+      "h": 40,
+      "text": "fps",
+      "font_size": 34,
+      "fg_color": "#FF4C01",
+      "font": "fonts/DejaVuSans-Bold.ttf"
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 28,
+      "y": 250,
+      "w": 424,
+      "h": 28,
+      "text": "BOOT",
+      "font_size": 20,
+      "fg_color": "#70706C",
+      "name": "status_text",
+      "bind": "status_text",
+      "font_charset": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -"
+    },
+    {
+      "type": "container",
+      "parent": -1,
+      "x": 28,
+      "y": 286,
+      "w": 424,
+      "h": 1,
+      "bg_color": "#CBCBC6",
+      "radius": 0
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 28,
+      "y": 292,
+      "w": 424,
+      "h": 22,
+      "text": "TICK 16 MS - SAMPLE 1 S - MODE 10 S",
+      "font_size": 15,
+      "fg_color": "#70706C"
+    },
+    {
+      "type": "container",
+      "parent": -1,
+      "name": "mover",
+      "x": {
+        "default": 160,
+        "min": 0,
+        "max": 400
+      },
+      "y": {
+        "default": 340,
+        "min": 320,
+        "max": 400
+      },
+      "w": 80,
+      "h": 80,
+      "bg_color": "#FF4C01",
+      "radius": 12
+    }
+  ]
+}
